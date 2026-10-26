@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "relict-gametest",
+  "version": "1.0.0",
+  "name": "Relict game tests",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": [
+      {
+        "adapter": "kotlin",
+        "value": "relict.gametest.RelictClientGameTest"
+      }
+    ]
+  },
+  "depends": {
+    "relict": "*",
+    "fabric-language-kotlin": "*"
+  }
+}

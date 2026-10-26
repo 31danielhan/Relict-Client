@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "relict",
+  "version": "${version}",
+  "name": "Relict Client",
+  "description": "A DonutSMP base-hunting client: base finder, ESP, region HUD, search coverage and waypoints.",
+  "icon": "assets/relict/icon.png",
+  "authors": ["Relict"],
+  "license": "All-Rights-Reserved",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "relict.RelictClient"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "${minecraft_dep}",
+    "java": "${java_dep}",
+    "fabric-api": "*",
+    "fabric-language-kotlin": "*",
+    "${mcef_id}": "*"
+  }
+}

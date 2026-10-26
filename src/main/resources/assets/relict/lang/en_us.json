@@ -1,0 +1,15 @@
+{
+  "key.relict.open_ui": "Open Relict UI",
+  "key.category.relict.main": "Relict",
+  "key.relict.coverage.toggle": "Search Coverage: toggle",
+  "key.relict.waypoints.toggle": "Waypoints: toggle",
+  "key.relict.donut_regions.toggle": "Donut Regions: toggle",
+  "key.relict.base_finder.toggle": "Base Finder: toggle",
+  "key.relict.live_players.toggle": "Live Player Search: toggle",
+  "key.relict.base_esp.toggle": "Base ESP: toggle",
+  "key.relict.block_esp.toggle": "Block ESP: toggle",
+  "key.relict.chunk_esp.toggle": "Chunk ESP: toggle",
+  "key.relict.waypoints.drop": "Waypoints: drop one here",
+  "key.relict.debug.toggle": "Debug: toggle module",
+  "key.relict.debug.ping": "Debug: ping"
+}

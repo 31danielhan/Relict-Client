@@ -1,0 +1,95 @@
+<!-- Generated from branding/relict-logo.svg by scripts/sync-logo.py. -->
+<script lang="ts">
+  let { size = 22 }: { size?: number } = $props()
+</script>
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width={size} height={size} aria-hidden="true">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="75%">
+      <stop offset="0" stop-color="#1b2540"/>
+      <stop offset="1" stop-color="#090c14"/>
+    </radialGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6f9bff" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="#4c7dff"/>
+    </linearGradient>
+    <radialGradient id="dough" cx="42%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#f2b872"/>
+      <stop offset="1" stop-color="#b9692c"/>
+    </radialGradient>
+    <linearGradient id="glaze" x1="0" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#ff9ccf"/>
+      <stop offset="1" stop-color="#ff4f9a"/>
+    </linearGradient>
+    <radialGradient id="ping" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#5dffb0" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#5dffb0" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="scope"><circle cx="128" cy="128" r="100"/></clipPath>
+  </defs>
+
+  <rect width="256" height="256" rx="58" fill="url(#bg)"/>
+  <rect x="1" y="1" width="254" height="254" rx="57" fill="none" stroke="#4c7dff" stroke-opacity="0.35" stroke-width="2"/>
+
+  <g fill="none" stroke="#4c7dff" stroke-linecap="round">
+    <circle cx="128" cy="128" r="100" stroke-opacity="0.55" stroke-width="3"/>
+    <circle cx="128" cy="128" r="72" stroke-opacity="0.32" stroke-width="2.2"/>
+    <circle cx="128" cy="128" r="48" stroke-opacity="0.22" stroke-width="2"/>
+    <path d="M128,28 V228 M28,128 H228" stroke-opacity="0.16" stroke-width="2"/>
+  </g>
+
+  <g clip-path="url(#scope)">
+    <path d="M128,128 L41.40,78.00 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L43.66,74.27 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L46.08,70.64 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L48.66,67.12 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L51.40,63.72 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L54.27,60.44 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L57.29,57.29 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L60.44,54.27 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L63.72,51.40 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L67.12,48.66 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L70.64,46.08 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L74.27,43.66 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L78.00,41.40 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L81.83,39.30 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L85.74,37.37 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L89.73,35.61 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L93.80,34.03 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L97.93,32.63 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L102.12,31.41 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L106.36,30.37 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L110.64,29.52 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L114.95,28.86 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L119.28,28.38 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L123.64,28.10 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L128.00,28.00 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L132.36,28.10 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L136.72,28.38 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L141.05,28.86 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L145.36,29.52 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L149.64,30.37 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L153.88,31.41 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L158.07,32.63 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L162.20,34.03 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+    <path d="M128,128 L166.27,35.61 A100,100 0 0 1 170.26,37.37 Z" fill="url(#beam)" opacity="0.032"/>
+  </g>
+  <path d="M128,128 L170.26,37.37" stroke="#9db9ff" stroke-width="2.4" stroke-linecap="round" opacity="0.95"/>
+
+  <circle cx="198.45" cy="78.67" r="14" fill="url(#ping)"/>
+  <circle cx="198.45" cy="78.67" r="4.2" fill="#5dffb0"/>
+
+  <g>
+    <ellipse cx="128" cy="132" rx="48" ry="46" fill="#000" opacity="0.35"/>
+    <path d="M82,128 a46,46 0 1 0 92,0 a46,46 0 1 0 -92,0 Z M112,128 a16,16 0 1 0 32,0 a16,16 0 1 0 -32,0 Z" fill="url(#dough)" fill-rule="evenodd"/>
+    <path d="M168.00,128.00 L168.84,129.43 L169.54,130.91 L170.03,132.42 L170.25,133.94 L170.15,135.43 L169.73,136.87 L169.01,138.22 L168.03,139.48 L166.87,140.63 L165.59,141.68 L164.29,142.66 L163.04,143.60 L161.92,144.54 L160.97,145.53 L160.22,146.60 L159.66,147.79 L159.28,149.10 L159.03,150.54 L158.84,152.09 L158.64,153.71 L158.37,155.34 L157.96,156.93 L157.36,158.40 L156.55,159.70 L155.51,160.79 L154.27,161.62 L152.84,162.19 L151.29,162.53 L149.66,162.66 L148.00,162.64 L146.37,162.55 L144.81,162.47 L143.35,162.47 L141.99,162.62 L140.72,162.96 L139.54,163.51 L138.40,164.27 L137.28,165.21 L136.14,166.28 L134.95,167.39 L133.69,168.47 L132.35,169.42 L130.95,170.16 L129.49,170.64 L128.00,170.80 L126.51,170.64 L125.05,170.16 L123.65,169.42 L122.31,168.47 L121.05,167.39 L119.86,166.28 L118.72,165.21 L117.60,164.27 L116.46,163.51 L115.28,162.96 L114.01,162.62 L112.65,162.47 L111.19,162.47 L109.63,162.55 L108.00,162.64 L106.34,162.66 L104.71,162.53 L103.16,162.19 L101.73,161.62 L100.49,160.79 L99.45,159.70 L98.64,158.40 L98.04,156.93 L97.63,155.34 L97.36,153.71 L97.16,152.09 L96.97,150.54 L96.72,149.10 L96.34,147.79 L95.78,146.60 L95.03,145.53 L94.08,144.54 L92.96,143.60 L91.71,142.66 L90.41,141.68 L89.13,140.63 L87.97,139.48 L86.99,138.22 L86.27,136.87 L85.85,135.43 L85.75,133.94 L85.97,132.42 L86.46,130.91 L87.16,129.43 L88.00,128.00 L88.89,126.63 L89.74,125.32 L90.47,124.06 L91.03,122.80 L91.37,121.54 L91.48,120.24 L91.39,118.87 L91.13,117.43 L90.78,115.91 L90.41,114.32 L90.11,112.69 L89.95,111.06 L90.01,109.47 L90.33,107.97 L90.93,106.60 L91.82,105.39 L92.96,104.37 L94.31,103.52 L95.80,102.84 L97.36,102.29 L98.92,101.81 L100.41,101.36 L101.79,100.86 L103.02,100.25 L104.09,99.50 L105.01,98.58 L105.82,97.47 L106.55,96.20 L107.26,94.81 L108.00,93.36 L108.81,91.92 L109.74,90.57 L110.81,89.39 L112.02,88.44 L113.36,87.78 L114.82,87.43 L116.35,87.37 L117.92,87.59 L119.50,88.03 L121.05,88.61 L122.55,89.25 L123.99,89.86 L125.37,90.36 L126.70,90.69 L128.00,90.80 L129.30,90.69 L130.63,90.36 L132.01,89.86 L133.45,89.25 L134.95,88.61 L136.50,88.03 L138.08,87.59 L139.65,87.37 L141.18,87.43 L142.64,87.78 L143.98,88.44 L145.19,89.39 L146.26,90.57 L147.19,91.92 L148.00,93.36 L148.74,94.81 L149.45,96.20 L150.18,97.47 L150.99,98.58 L151.91,99.50 L152.98,100.25 L154.21,100.86 L155.59,101.36 L157.08,101.81 L158.64,102.29 L160.20,102.84 L161.69,103.52 L163.04,104.37 L164.18,105.39 L165.07,106.60 L165.67,107.97 L165.99,109.47 L166.05,111.06 L165.89,112.69 L165.59,114.32 L165.22,115.91 L164.87,117.43 L164.61,118.87 L164.52,120.24 L164.63,121.54 L164.97,122.80 L165.53,124.06 L166.26,125.32 L167.11,126.63 Z M111,128 a17,17 0 1 0 34,0 a17,17 0 1 0 -34,0 Z" fill="url(#glaze)" fill-rule="evenodd"/>
+    <path d="M99.42,111.50 A33,33 0 0 1 125.12,95.13" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="3.2" stroke-linecap="round"/>
+    <rect x="107.50" y="99.35" width="10" height="3.6" rx="1.8" fill="#ffffff" transform="rotate(20 112.50 101.15)"/>
+    <rect x="138.50" y="99.35" width="10" height="3.6" rx="1.8" fill="#ffe066" transform="rotate(-35 143.50 101.15)"/>
+    <rect x="153.88" y="123.50" width="10" height="3.6" rx="1.8" fill="#7be0ff" transform="rotate(60 158.88 125.30)"/>
+    <rect x="142.93" y="149.95" width="10" height="3.6" rx="1.8" fill="#ffffff" transform="rotate(-10 147.93 151.75)"/>
+    <rect x="112.40" y="155.33" width="10" height="3.6" rx="1.8" fill="#a6f3c4" transform="rotate(40 117.40 157.13)"/>
+    <rect x="93.06" y="134.22" width="10" height="3.6" rx="1.8" fill="#ffe066" transform="rotate(-50 98.06 136.02)"/>
+    <rect x="94.90" y="113.10" width="10" height="3.6" rx="1.8" fill="#7be0ff" transform="rotate(15 99.90 114.90)"/>
+  </g>
+</svg>

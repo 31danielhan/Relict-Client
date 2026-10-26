@@ -1,0 +1,127 @@
+name: Release
+
+# Push a tag like v0.2.0 (after bumping mod_version and running scripts/gen-installer-manifest.py) and this builds
+# everything and publishes a GitHub Release. The installers read update.json from the latest release, so people who
+# already have Relict get the new version the next time they open the installer.
+#
+# Run by hand (Actions -> Release -> Run workflow) it builds and uploads the files as artifacts but publishes nothing.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  jars:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the version numbers agree
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: python3 scripts/check-release.py "${GITHUB_REF_NAME}"
+
+      # Gradle (Fabric Loom) needs Java 25+; the jars themselves target Java 21 (1.21.x) and 25 (26.x).
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Build the Relict jar for every supported Minecraft version
+        run: ./scripts/build-all.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relict-jars
+          path: dist/relict-mc*.jar
+          if-no-files-found: error
+
+  # jpackage can't cross-compile, so each platform's installer is built on that platform.
+  installers:
+    needs: jars
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      # The installer carries the jars inside itself.
+      - uses: actions/download-artifact@v4
+        with:
+          name: relict-jars
+          path: dist
+
+      # Tell this installer where to look for newer builds: the latest release of this repository.
+      - name: Point the installer at this repository's releases
+        shell: bash
+        run: echo "feedUrl=https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/update.json" > installer/src/main/resources/update.properties
+
+      - name: Package the installer
+        shell: bash
+        run: ./installer/package.sh
+
+      # Release asset names with spaces get rewritten by GitHub, so the files are given plain names.
+      - name: Name the files for upload
+        shell: bash
+        run: |
+          mkdir -p upload
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            version="$(sed -n 's/^version=//p' installer/src/main/resources/installer.properties)"
+            cp installer/build/package/*.dmg "upload/Relict-Installer-${version}.dmg"
+          fi
+
+      - name: Zip the Windows app
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path "installer/build/package/Relict Installer" -DestinationPath "upload/Relict-Installer-windows.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relict-installer-${{ runner.os }}
+          path: upload/*
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [jars, installers]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: relict-jars
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: relict-installer-*
+          path: installers
+          merge-multiple: true
+
+      # update.json: the manifest plus where each jar and installer is downloaded from, and their SHA-512 hashes.
+      - name: Write update.json
+        run: |
+          notes="$(git tag -l --format='%(contents:subject)' "${GITHUB_REF_NAME}")"
+          python3 scripts/gen-update-feed.py "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}" \
+            --notes "${notes:-Relict ${GITHUB_REF_NAME#v}}" \
+            --mac installers/Relict-Installer-*.dmg \
+            --windows installers/Relict-Installer-windows.zip
+          cat dist/update.json
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --title "Relict ${GITHUB_REF_NAME#v}" --generate-notes \
+            dist/update.json dist/relict-mc*.jar installers/*
