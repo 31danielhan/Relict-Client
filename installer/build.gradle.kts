@@ -15,8 +15,13 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
+// Compiled for Java 21 by whichever JDK runs Gradle (21 or newer), so CI doesn't need a separate Java 21 install.
 kotlin {
-    jvmToolchain(21)
+    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21) }
+}
+
+tasks.withType<JavaCompile> {
+    options.release.set(21)
 }
 
 application {
