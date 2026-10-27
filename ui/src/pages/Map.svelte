@@ -54,7 +54,7 @@
 <div class="layout">
   <div class="left">
     <header>
-      <h1>Map</h1>
+      <h1><em>World</em> Map</h1>
       <p class="muted">Drag to pan, scroll to zoom. The shaded area is ground you have already flown over.</p>
     </header>
     {#if !coverageOn}
@@ -108,20 +108,24 @@
 </div>
 
 <style>
-  .layout { display: grid; grid-template-columns: 1fr 310px; height: 100%; }
-  .left { display: flex; flex-direction: column; gap: 14px; padding: 28px 24px 24px 32px; min-width: 0; min-height: 0; }
+  .layout { display: grid; grid-template-columns: 1fr 290px; gap: 14px; height: 100%; }
+  .left { display: flex; flex-direction: column; gap: 14px; padding: 26px 0 16px 30px; min-width: 0; min-height: 0; }
   .left > header { display: flex; flex-direction: column; gap: 4px; }
   .mapbox { flex: 1; min-height: 0; }
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr 230px; gap: 10px; }
+    .left { padding: 20px 0 10px 20px; }
+  }
   .notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 14px; }
-  .primary { padding: 5px 14px; border-radius: 7px; background: var(--accent); color: #fff; font-weight: 600; }
-  aside { display: flex; flex-direction: column; gap: 20px; padding: 28px 22px; overflow-y: auto; background: var(--surface); border-left: 1px solid var(--border); }
+  .primary { padding: 5px 14px; border-radius: 9px; background: var(--accent); color: #fff; font-weight: 600; }
+  aside { display: flex; flex-direction: column; gap: 20px; padding: 24px 20px; overflow-y: auto; border-radius: 18px; background: linear-gradient(180deg, rgba(14, 16, 56, 0.55), rgba(6, 8, 34, 0.55)); border: 1px solid var(--border); border-top-color: rgba(124, 130, 255, 0.22); }
   section { display: flex; flex-direction: column; gap: 9px; }
-  .seg { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
-  .seg button { flex: 1; padding: 5px 8px; border-radius: 6px; color: var(--muted); }
+  .seg { display: flex; background: #05061c; border: 1px solid var(--border); border-radius: 11px; padding: 3px; }
+  .seg button { flex: 1; padding: 5px 8px; border-radius: 8px; color: var(--muted); }
   .seg button:hover { color: var(--text); }
   .seg button.active { background: var(--accent-soft); color: var(--accent); }
   .stat { padding: 14px 16px; }
-  .big { font-size: 28px; font-weight: 650; letter-spacing: -0.02em; }
+  .big { font-family: var(--serif); font-size: 32px; line-height: 1.1; }
   .unit { font-size: 15px; font-weight: 500; }
   .small { font-size: 12px; }
   .ghost { padding: 6px 10px; border-radius: 7px; border: 1px solid var(--border); color: var(--muted); }

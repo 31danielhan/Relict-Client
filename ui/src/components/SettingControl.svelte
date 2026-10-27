@@ -41,7 +41,7 @@
 </div>
 
 <style>
-  .row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 13px 0; border-top: 1px solid var(--border-soft); }
   .row:first-child { border-top: 0; }
   .name { font-weight: 550; }
   .desc { font-size: 12px; }
@@ -49,14 +49,14 @@
 
   input[type='range'] { width: 150px; accent-color: var(--accent); }
   .num, .text-in {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; outline: none;
+    background: #05061c; border: 1px solid var(--border); border-radius: 9px; padding: 6px 10px; outline: none;
   }
   .num { width: 70px; }
   .text-in { width: 170px; }
   .num:focus, .text-in:focus { border-color: var(--accent); }
 
-  .seg { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
-  .seg button { padding: 4px 11px; border-radius: 6px; color: var(--muted); transition: background var(--ease), color var(--ease); }
+  .seg { display: flex; background: #05061c; border: 1px solid var(--border); border-radius: 11px; padding: 3px; }
+  .seg button { padding: 4px 12px; border-radius: 8px; color: var(--muted); transition: background var(--ease), color var(--ease); }
   .seg button:hover { color: var(--text); }
   .seg button.active { background: var(--accent-soft); color: var(--accent); }
 

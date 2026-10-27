@@ -9,12 +9,27 @@ object DonutHuds {
     private const val PAD = 6
     private const val MARGIN = 6
 
+    /** A dark indigo panel with a thin outline and softly rounded corners, built from rectangles that never overlap. */
     private fun panel(c: HudCanvas, x: Int, y: Int, w: Int, h: Int) {
-        c.fill(x, y, w, h, Colors.PANEL)
-        c.fill(x, y, w, 1, Colors.PANEL_EDGE)
-        c.fill(x, y + h - 1, w, 1, Colors.PANEL_EDGE)
-        c.fill(x, y, 1, h, Colors.PANEL_EDGE)
-        c.fill(x + w - 1, y, 1, h, Colors.PANEL_EDGE)
+        c.fill(x + 3, y, w - 6, h, Colors.PANEL)
+        c.fill(x + 2, y + 1, 1, h - 2, Colors.PANEL)
+        c.fill(x + w - 3, y + 1, 1, h - 2, Colors.PANEL)
+        c.fill(x + 1, y + 2, 1, h - 4, Colors.PANEL)
+        c.fill(x + w - 2, y + 2, 1, h - 4, Colors.PANEL)
+        c.fill(x, y + 3, 1, h - 6, Colors.PANEL)
+        c.fill(x + w - 1, y + 3, 1, h - 6, Colors.PANEL)
+
+        val edge = Colors.PANEL_EDGE
+        c.fill(x + 3, y, w - 6, 1, edge)
+        c.fill(x + 3, y + h - 1, w - 6, 1, edge)
+        c.fill(x, y + 3, 1, h - 6, edge)
+        c.fill(x + w - 1, y + 3, 1, h - 6, edge)
+        for ((dx, dy) in listOf(2 to 1, 1 to 2)) {
+            c.fill(x + dx, y + dy, 1, 1, edge)
+            c.fill(x + w - 1 - dx, y + dy, 1, 1, edge)
+            c.fill(x + dx, y + h - 1 - dy, 1, 1, edge)
+            c.fill(x + w - 1 - dx, y + h - 1 - dy, 1, 1, edge)
+        }
     }
 
     /** The server's region map, top right, with the region you are in highlighted. */

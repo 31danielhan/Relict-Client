@@ -74,7 +74,9 @@ on<ModuleDto>('module.changed', replaceModule)
 // ---- navigation ----------------------------------------------------------------------------
 
 export const nav = $state({
-  page: 'dashboard' as Page,
+  page: 'overview' as Page,
+  /** Which group the Modules page is showing (Donut, Search...). */
+  category: 'Donut',
   /** Set to ask the map to centre on a spot (e.g. "Show on map" from a waypoint). */
   focus: null as { x: number; z: number; dimension: string } | null,
 })

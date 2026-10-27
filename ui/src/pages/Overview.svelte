@@ -7,7 +7,7 @@
 
 <div class="page">
   <header>
-    <h1>Dashboard</h1>
+    <h1><em>Relict</em> Overview</h1>
     <p class="muted">Press {app.info?.uiKey ?? 'the UI key'} to open this window. Esc closes it.</p>
   </header>
 
@@ -26,7 +26,7 @@
           <Toggle checked={m.enabled} label="Enable {m.name}" onchange={(v) => setEnabled(m.id, v)} />
         </div>
       {:else}
-        <div class="empty">Nothing is enabled yet. Turn modules on from the Modules page.</div>
+        <div class="empty">Nothing is enabled yet. Turn modules on from the Modules pages.</div>
       {/each}
     </div>
   </section>
@@ -35,8 +35,8 @@
 <style>
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
   .stat { padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
-  .value { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; }
-  .value .muted { font-size: 16px; font-weight: 500; }
+  .value { font-family: var(--serif); font-size: 32px; line-height: 1.1; }
+  .value .muted { font-family: var(--sans); font-size: 16px; }
   .list { display: flex; flex-direction: column; gap: 10px; }
   .item { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 18px; border-top: 1px solid var(--border); }
   .item:first-child { border-top: 0; }

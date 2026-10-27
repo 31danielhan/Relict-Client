@@ -24,7 +24,7 @@
 
   const MIN_ZOOM = 0.15
   const MAX_ZOOM = 24
-  const accent = () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4c7dff'
+  const accent = () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#8777ff'
 
   const stepFor = (z: number) => {
     let step = 1
@@ -79,7 +79,7 @@
     canvas.width = width * dpr
     canvas.height = height * dpr
     const ctx = canvas.getContext('2d')!
-    ctx.fillStyle = '#0b0d12'
+    ctx.fillStyle = '#05061c'
     ctx.fillRect(0, 0, width, height)
 
     // grid every 16 chunks (256 blocks), stronger every 64
@@ -304,16 +304,16 @@
 </div>
 
 <style>
-  .wrap { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--border); background: #0b0d12; }
+  .wrap { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--border); background: #05061c; }
   canvas { display: block; width: 100%; height: 100%; }
   .tip {
     position: absolute; left: 12px; top: 12px; padding: 5px 10px; border-radius: 7px; pointer-events: none;
-    background: rgba(14, 16, 22, 0.92); border: 1px solid var(--border); font-size: 12px;
+    background: rgba(8, 10, 40, 0.92); border: 1px solid var(--border); font-size: 12px;
   }
   .controls { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 6px; }
   .controls button {
     width: 32px; height: 32px; border-radius: 8px; font-size: 16px; line-height: 1;
-    background: rgba(14, 16, 22, 0.92); border: 1px solid var(--border); color: var(--text);
+    background: rgba(8, 10, 40, 0.92); border: 1px solid var(--border); color: var(--text);
   }
   .controls button:hover { background: var(--surface-2); }
   .controls button.active { color: var(--accent); border-color: var(--accent); }

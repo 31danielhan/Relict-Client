@@ -22,7 +22,7 @@
 
 <div class="page">
   <header>
-    <h1>Waypoints</h1>
+    <h1><em>Saved</em> Waypoints</h1>
     <p class="muted">The places you've found. Bind a key under Options → Controls → Relict to drop one where you stand.</p>
   </header>
 
@@ -56,10 +56,10 @@
 
 <style>
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-  .primary { padding: 8px 16px; border-radius: 8px; background: var(--accent); color: #fff; font-weight: 600; }
+  .primary { padding: 8px 16px; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 6px 18px -8px var(--accent-glow); }
   .primary:hover:not(:disabled) { filter: brightness(1.1); }
   .primary:disabled { opacity: 0.4; cursor: default; }
-  .search { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px; width: 190px; outline: none; }
+  .search { background: #05061c; border: 1px solid var(--border); border-radius: 10px; padding: 7px 11px; width: 190px; outline: none; }
   .search:focus { border-color: var(--accent); }
   .filters { display: flex; flex-wrap: wrap; gap: 6px; }
   .f { padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); --c: var(--accent); }

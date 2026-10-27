@@ -6,6 +6,13 @@ Fabric client mod for base hunting. See [PLAN.md](PLAN.md).
 - Fabric Loom 1.19 needs **Java 25+ to run Gradle**. The jars for 1.21.x compile to Java 21; the 26.x jars need Java 25
   (which the Minecraft launcher supplies by itself for those versions).
 
+## The game GUI
+
+Press Right Shift in game. The window is a Svelte page shown through MCEF (Chromium), floating over the world: modules are
+grouped in the sidebar (Donut, Search), each row expands to its settings and has a switch, and the Theme page picks the accent
+colour. The HUDs (region map, base finder) use the same colours. To work on the look without starting Minecraft, run
+`npm run dev` in `ui/`: it uses made-up modules, so nothing needs the game.
+
 ## Donut modules
 
 Off by default, one toggle each (see the staff note in [PLAN.md](PLAN.md)): **Donut Regions** HUD (the 9x9 region grid), **Base Finder**
@@ -84,7 +91,10 @@ Screenshots from the game test land in `build/run/clientGameTest/screenshots/`.
 
 ## Installer (Mac and Windows)
 
-`installer/` is a small desktop app that sets Relict up for you. It looks for the launchers on your computer by itself:
+`installer/` is a small desktop app that sets Relict up for you. Its window is a web page (the same dark indigo design as the
+in-game GUI) shown in a JavaFX WebView; the Kotlin side does the work. The page lives in `ui/src/installer`, so the whole
+design system is shared with the game: `npm run dev:installer` in `ui/` previews it in a browser with made-up launchers, and
+`--screenshot` below paints the real window. It looks for the launchers on your computer by itself:
 
 | Launcher | What it finds | What it does |
 |---|---|---|
@@ -125,7 +135,7 @@ RelictInstaller --cli install 1.21.11 [--dir <minecraft folder>] [--layout separ
 RelictInstaller --cli install 1.21.11 --instance <game folder>  # any folder that has (or gets) a mods folder
 RelictInstaller --cli check                                     # is there a newer Relict or installer in the update feed?
 RelictInstaller --cli update                                    # install it wherever Relict is installed
-RelictInstaller --screenshot out.png [--update] [--select <n>]  # paints the window to a PNG
+RelictInstaller --screenshot out.png [--update] [--select <n>]  # opens the window, saves it as a PNG and quits
 ```
 
 ### Updates

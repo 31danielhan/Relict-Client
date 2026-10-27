@@ -2,31 +2,58 @@
 import type { CoverageView, Info, ModuleDto, SettingDto, Waypoint } from './types'
 import { CLIENT } from './types'
 
-const info: Info = { version: '0.1.0-dev', minecraft: '1.21.11', mcef: 'mock', dev: true, uiKey: 'Right Shift' }
+const info: Info = { version: '0.1.1-dev', minecraft: '1.21.11', mcef: 'mock', dev: true, uiKey: 'Right Shift' }
+
+const intS = (id: string, name: string, value: number, min: number, max: number, description = ''): SettingDto =>
+  ({ id, name, type: 'int', description, value, default: value, min, max })
+const boolS = (id: string, name: string, value: boolean, description = ''): SettingDto =>
+  ({ id, name, type: 'bool', description, value, default: value })
 
 const modules: ModuleDto[] = [
   {
-    id: 'waypoints', name: 'Waypoints', tier: 'green', enabled: true,
-    description: 'Save and tag the places you find.',
-    settings: [{ id: 'defaultName', name: 'Default name', type: 'string', description: '', value: 'Find', default: 'Find', maxLength: 24 }],
+    id: 'donut_regions', name: 'Donut Regions', tier: 'green', enabled: true,
+    description: "Shows the server's region map and which region you are in.",
+    settings: [],
+  },
+  {
+    id: 'base_finder', name: 'Base Finder', tier: 'yellow', enabled: true,
+    description: 'Marks loaded chunks with signs of player activity (stashes, machines, dug shafts) and lists the nearest.',
+    settings: [intS('radius', 'Scan radius (chunks)', 12, 2, 32, 'How far around you to look.'), intS('minScore', 'Minimum score', 20, 0, 300, 'Chunks scoring less than this are not listed.')],
+  },
+  {
+    id: 'live_players', name: 'Live Player Search', tier: 'yellow', enabled: false,
+    description: 'Lists nearby players and chunks with fresh building or digging activity, and can alert you to new ones.',
+    settings: [{ id: 'alerts', name: 'Alerts', type: 'enum', description: '', value: 'OFF', default: 'OFF', options: ['OFF', 'TOAST'] }],
+  },
+  {
+    id: 'base_esp', name: 'Base ESP', tier: 'yellow', enabled: true,
+    description: 'Highlights clusters of storage and redstone below a height limit, through walls.',
+    settings: [intS('radius', 'Radius (chunks)', 8, 1, 16, 'How far around you to highlight.'), intS('maxY', 'Highlight below Y', 0, -64, 320, 'Only blocks below this height are highlighted.')],
+  },
+  {
+    id: 'block_esp', name: 'Block ESP', tier: 'yellow', enabled: false,
+    description: 'Highlights the blocks you pick (for example chests or spawners), through walls.',
+    settings: [{ id: 'blocks', name: 'Blocks', type: 'string', description: 'Comma-separated block ids.', value: 'minecraft:chest, minecraft:ender_chest, minecraft:spawner', default: 'minecraft:chest, minecraft:ender_chest, minecraft:spawner', maxLength: 400 }],
+  },
+  {
+    id: 'chunk_esp', name: 'Chunk ESP', tier: 'yellow', enabled: false,
+    description: 'Outlines the chunks the Base Finder flags, through walls.',
+    settings: [intS('radius', 'Scan radius (chunks)', 12, 2, 32), intS('minScore', 'Minimum score', 20, 0, 300)],
   },
   {
     id: 'coverage', name: 'Search Coverage', tier: 'green', enabled: true,
-    description: 'Records the areas you have already searched.',
-    settings: [
-      { id: 'radius', name: 'Search radius (chunks)', type: 'int', description: 'How far around you counts as searched.', value: 8, default: 8, min: 1, max: 32 },
-      { id: 'trail', name: 'Show trail', type: 'bool', description: '', value: true, default: true },
-    ],
+    description: 'Records the ground you have already flown over so you never search the same area twice.',
+    settings: [intS('maxRadius', 'Max radius (chunks)', 32, 2, 32, 'Never count chunks further than this from you.'), boolS('trail', 'Show trail', true)],
   },
   {
-    id: 'anomaly', name: 'Visible Anomaly Marker', tier: 'yellow', enabled: false,
-    description: 'Suggests logging unusual blocks you can see. Needs staff approval before use.',
-    settings: [{ id: 'mode', name: 'Mode', type: 'enum', description: '', value: 'SUGGEST', default: 'SUGGEST', options: ['SUGGEST', 'AUTO'] }],
+    id: 'waypoints', name: 'Waypoints', tier: 'green', enabled: true,
+    description: 'Save and tag the places you find. Bind a key in Controls to drop one where you stand.',
+    settings: [{ id: 'defaultName', name: 'Default name', type: 'string', description: '', value: 'Find', default: 'Find', maxLength: 24 }],
   },
 ]
 
 const client: SettingDto[] = [
-  { id: 'accent', name: 'Accent colour', type: 'enum', description: '', value: 'BLUE', default: 'BLUE', options: ['BLUE', 'GREEN', 'PURPLE', 'ORANGE'] },
+  { id: 'accent', name: 'Accent colour', type: 'enum', description: '', value: 'PURPLE', default: 'PURPLE', options: ['PURPLE', 'BLUE', 'GREEN', 'ORANGE'] },
   { id: 'reducedMotion', name: 'Reduce motion', type: 'bool', description: 'Turns off UI animations.', value: false, default: false },
 ]
 

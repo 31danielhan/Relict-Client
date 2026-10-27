@@ -1,13 +1,13 @@
 package relict.installer
 
-import com.formdev.flatlaf.FlatDarkLaf
-import com.formdev.flatlaf.FlatLaf
 import com.formdev.flatlaf.extras.FlatSVGIcon
+import javafx.application.Application
 import java.awt.image.BufferedImage
 import java.nio.file.Path
 import javax.imageio.ImageIO
-import javax.swing.SwingUtilities
 import kotlin.system.exitProcess
+
+const val LOGO_RESOURCE = "relict-logo.svg"
 
 fun main(args: Array<String>) {
     if (args.firstOrNull() == "--cli") Cli.run(args.drop(1))
@@ -23,14 +23,12 @@ fun main(args: Array<String>) {
         exitProcess(0)
     }
 
-    FlatLaf.setGlobalExtraDefaults(Theme.defaults)
-    FlatDarkLaf.setup()
-
-    // --screenshot <file.png> [--update] [--select <index>]: paints the window to an image without showing it.
+    // --screenshot <file.png> [--update] [--select <index>]: opens the window, writes it to an image and quits.
     // --update pretends a newer build was found, to see that state.
     if (args.firstOrNull() == "--screenshot") {
-        SwingUtilities.invokeAndWait { InstallerWindow(Manifest.bundled(), preview = "--update" in args, initialSelection = args.indexOf("--select").takeIf { it >= 0 }?.let { args[it + 1].toInt() }).screenshot(Path.of(args[1])) }
-        exitProcess(0)
+        FxLaunch.screenshot = Path.of(args[1])
+        FxLaunch.preview = "--update" in args
+        FxLaunch.select = args.indexOf("--select").takeIf { it >= 0 }?.let { args[it + 1].toInt() }
     }
-    SwingUtilities.invokeLater { InstallerWindow(Manifest.bundled()).isVisible = true }
+    Application.launch(FxApp::class.java)
 }

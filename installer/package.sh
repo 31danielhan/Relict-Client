@@ -33,7 +33,7 @@ COMMON=(--name "$NAME" --app-version "$VERSION" --input installer/build/fat --ma
         --main-class relict.installer.MainKt --dest "$STAGE" --vendor Relict
         --description "Installs Relict Client into your Minecraft launchers"
         --java-options --enable-native-access=ALL-UNNAMED
-        --add-modules java.base,java.desktop,java.logging,java.net.http,java.sql,java.prefs,java.naming,java.xml,jdk.unsupported)
+        --add-modules java.base,java.desktop,java.logging,java.management,java.net.http,java.sql,java.prefs,java.naming,java.xml,jdk.unsupported,jdk.jsobject,jdk.xml.dom,jdk.jfr)
 
 case "$(uname -s)" in
   Darwin)

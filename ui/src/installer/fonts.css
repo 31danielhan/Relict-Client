@@ -1,0 +1,7 @@
+/* The installer's WebView can't read WOFF2, so it uses plain TrueType files, one per weight. */
+@font-face { font-family: 'DM Sans'; src: url('./fonts/dm-sans-400.ttf') format('truetype'); font-weight: 400; }
+@font-face { font-family: 'DM Sans'; src: url('./fonts/dm-sans-500.ttf') format('truetype'); font-weight: 500; }
+@font-face { font-family: 'DM Sans'; src: url('./fonts/dm-sans-600.ttf') format('truetype'); font-weight: 600; }
+@font-face { font-family: 'DM Sans'; src: url('./fonts/dm-sans-700.ttf') format('truetype'); font-weight: 700; }
+@font-face { font-family: 'DM Serif Display'; src: url('./fonts/dm-serif-display.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+@font-face { font-family: 'DM Serif Display'; src: url('./fonts/dm-serif-display-italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }

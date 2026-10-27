@@ -27,6 +27,6 @@ object Mcef {
             prepared = true
             CefHandlers.install(MCEF.getClient().handle)
         }
-        return MCEF.createBrowser(url, false)
+        return MCEF.createBrowser(url, true)
     }
 }

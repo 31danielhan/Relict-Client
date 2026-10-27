@@ -35,7 +35,22 @@ export interface Info {
 /** Module id used for the client's own settings. */
 export const CLIENT = 'client'
 
-export type Page = 'dashboard' | 'map' | 'waypoints' | 'modules' | 'settings'
+export type Page = 'overview' | 'map' | 'waypoints' | 'modules' | 'settings' | 'theme' | 'keybinds'
+
+/** Which sidebar group each module is listed under. Modules not named here fall under Other. */
+export const CATEGORY_OF: Record<string, string> = {
+  donut_regions: 'Donut',
+  base_finder: 'Donut',
+  live_players: 'Donut',
+  base_esp: 'Donut',
+  block_esp: 'Donut',
+  chunk_esp: 'Donut',
+  coverage: 'Search',
+  waypoints: 'Search',
+}
+/** Order of the sidebar groups. */
+export const CATEGORY_ORDER = ['Donut', 'Search', 'Other']
+export const categoryOf = (id: string) => CATEGORY_OF[id] ?? 'Other'
 
 export interface Waypoint {
   id: string

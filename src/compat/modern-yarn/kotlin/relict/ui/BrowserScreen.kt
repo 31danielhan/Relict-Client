@@ -25,7 +25,7 @@ class BrowserScreen(private val url: String, private val parent: Screen? = null)
     private val scale: Double get() = MinecraftClient.getInstance().window.scaleFactor.toDouble()
 
     override fun init() {
-        val b = browser ?: Mcef.api().createBrowser(url, false).also {
+        val b = browser ?: Mcef.api().createBrowser(url, true).also {
             browser = it
             Bridge.active = object : UiBrowser {
                 override val cef = it.cefBrowser

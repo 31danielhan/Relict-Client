@@ -123,7 +123,12 @@ class RelictClientGameTest : FabricClientGameTest {
             context.waitForScreen(BrowserScreen::class.java)
             context.waitTicks(80) // let the page load and fetch its data
 
-            for (page in listOf("dashboard", "map", "waypoints", "modules", "settings")) {
+            context.runOnClient<RuntimeException> {
+                val b = Bridge.active!!.cef
+                b.executeJavaScript("console.log('VIEWPORT ' + innerWidth + 'x' + innerHeight + ' dpr=' + devicePixelRatio + ' win=' + outerWidth + 'x' + outerHeight + ' window=' + JSON.stringify(document.querySelector('.window')?.getBoundingClientRect()) + ' stage=' + JSON.stringify(document.querySelector('.stage')?.getBoundingClientRect()) + ' body=' + document.body.scrollHeight)", b.url, 0)
+            }
+            context.waitTicks(10)
+            for (page in listOf("overview", "map", "waypoints", "modules", "settings", "theme")) {
                 context.runOnClient<RuntimeException> {
                     val b = Bridge.active!!.cef
                     b.executeJavaScript("location.hash = '#$page'", b.url, 0)
