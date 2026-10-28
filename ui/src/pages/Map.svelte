@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import CoverageMap from '../components/CoverageMap.svelte'
   import WaypointRow from '../components/WaypointRow.svelte'
-  import { clearCoverage, isEnabled, loadStats, loadWaypoints, nav, setEnabled, world } from '../lib/store.svelte'
+  import { clearCoverage, isEnabled, loadStats, loadWaypoints, nav, setEnabled, ui, world } from '../lib/store.svelte'
   import { dimensionName, TAGS } from '../lib/types'
 
   let dimension = $state('minecraft:overworld')
@@ -33,7 +33,7 @@
   $effect(() => { coverageOn; loadStats() })
   $effect(() => { waypointsOn; loadWaypoints() })
   onMount(() => {
-    const t = setInterval(loadStats, 3000)
+    const t = setInterval(() => { if (ui.open) loadStats() }, 3000)
     return () => clearInterval(t)
   })
 

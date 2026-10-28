@@ -131,8 +131,8 @@ Left over from the Donut modules work:
 - **Donut GUI page** in the Svelte UI: region grid, Base Finder list, live players.
 - **Port HUDs and world overlays** to 1.21.4 and 26.1.2 / 26.2 / 26.3 (1.21.11 has both; 1.21.10 has HUDs only: no public way to build the through-walls render layers).
 - **In-world tooltips/labels** on Base ESP boxes (e.g. "Unclear 583 score…"); screenshots proving Block ESP and Chunk ESP.
-- **From the project owner:** DonutSMP API/data for the region to group mapping (only 3 of 81 cells known: 22 EU Central, 107 EU West, 5 NA East) and what the server shows for a "live player".
-- **Get the DonutSMP staff approval in writing** (Discord message or screenshot); the Donut modules rest on that report.
+- **From the project owner:** DonutSMP API/data for the region to group mapping (now all 81 cells, read from a screenshot of the server's own map) and what the server shows for a "live player".
+- **Keep the DonutSMP staff approval on record.** The project owner talked to DonutSMP's admins and developers, who said this client is allowed as long as it does not harm other players. Keep a message or screenshot of that; the Donut modules rest on it, and the modules no longer carry a "needs approval" mark.
 - Phase 4 gap (Nether/Overworld converter), Phase 5 (Planner, Travel HUD, Safety alerts), Phases 6 and 7.
 
 Installer: set `feedUrl` in `installer/src/main/resources/update.properties` once an https host for `update.json` exists (see README, "Updates").

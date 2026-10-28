@@ -65,7 +65,7 @@ tasks.test {
 }
 
 // The installer carries the Relict jars inside itself; build them first with scripts/build-all.sh.
-val bundleJars = tasks.register<Copy>("bundleJars") {
+val bundleJars = tasks.register<Sync>("bundleJars") {
     from("../dist") { include("relict-mc*.jar") }
     into(layout.buildDirectory.dir("generated/bundled/jars"))
 }

@@ -30,4 +30,7 @@ object ScreenKeys {
             }
         }
     }
+
+    /** Whether a key press on the open GUI is the open key (which also closes it). */
+    fun matches(key: KeyHandle, event: net.minecraft.client.input.KeyEvent): Boolean = (key.native as KeyMapping).matches(event)
 }

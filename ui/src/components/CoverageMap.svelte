@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { invoke } from '../lib/bridge'
-  import { nav, world } from '../lib/store.svelte'
+  import { nav, ui, world } from '../lib/store.svelte'
   import { tagColor, type CoverageView, type Waypoint } from '../lib/types'
 
   let { dimension, selectedId = null, onselect }: { dimension: string; selectedId?: string | null; onselect: (id: string | null) => void } = $props()
@@ -277,7 +277,7 @@
     })
     ro.observe(wrap)
     followPlayer()
-    const refresh = setInterval(fetchView, 1500) // coverage grows while you fly
+    const refresh = setInterval(() => { if (ui.open) fetchView() }, 1500) // coverage grows while you fly
     return () => { ro.disconnect(); clearInterval(refresh); clearTimeout(timer) }
   })
 </script>

@@ -110,10 +110,19 @@ object DonutScanner {
             return
         }
         val activity = snapshot.activityFingerprint
-        // Changes in the chunks you are standing next to are most likely your own digging and building.
-        if (activity != existing.activity && !nearPlayer) existing.changes.addLast(now)
+        // Changes in the chunks you are standing next to are most likely your own digging and building. And when the sections you
+        // can see change (the server stops sending the underground when you go above Y 0, and sends it again when you go down),
+        // only the sections that were there both times are compared, so that is not read as someone building.
+        if (activity != existing.activity && !nearPlayer && changedWhereComparable(existing.snapshot, snapshot)) existing.changes.addLast(now)
         existing.activity = activity
-        existing.snapshot = snapshot
+        // Keep the old snapshot when nothing changed, so everything downstream can tell (by identity) that there is nothing new to work out.
+        if (snapshot.fingerprint != existing.snapshot.fingerprint) existing.snapshot = snapshot
+    }
+
+    private fun changedWhereComparable(old: ChunkSnapshot, new: ChunkSnapshot): Boolean {
+        val oldYs = old.sections.mapTo(HashSet()) { it.minY }
+        val common = new.sections.mapNotNullTo(HashSet()) { s -> s.minY.takeIf { it in oldYs } }
+        return old.activityFingerprintOver(common) != new.activityFingerprintOver(common)
     }
 
     @Synchronized

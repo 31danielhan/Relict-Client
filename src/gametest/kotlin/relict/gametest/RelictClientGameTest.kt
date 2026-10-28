@@ -5,6 +5,8 @@ import com.google.gson.JsonParser
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext
 import net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotOptions
+import relict.game.GameHolder
+import relict.render.WebHud
 import relict.core.KeyCodes
 import relict.core.ModuleManager
 import relict.ui.Bridge
@@ -105,18 +107,50 @@ class RelictClientGameTest : FabricClientGameTest {
             println("[gametest] live players: $live")
             check(live.any { it.asJsonObject["type"].asString == "activity" }) { "no activity signal after a distant change: $live" }
             val flagged = rpc(context, "base_finder.list").asJsonArray.map { it.asJsonObject }
-            check(flagged.any { e -> e["evidence"].asJsonArray.any { "live player signal" in it.asJsonObject["text"].asString } }) { "no live signal evidence: $flagged" }
+            check(flagged.any { e -> e["evidence"].asJsonArray.any { "possible player here" in it.asJsonObject["text"].asString } }) { "no possible-player evidence: $flagged" }
 
             // Look at the stash from a clear spot: first without the overlays (the real blocks), then with them.
             world.server.runCommand("tp @p 1002.5 -58 985 facing 1002.5 -54.5 1002.5")
             context.waitTicks(80)
             context.takeScreenshot(TestScreenshotOptions.of("donut-1-plain").withSize(1280, 720))
             context.runOnClient<RuntimeException> {
-                for (id in listOf("base_esp", "chunk_esp", "block_esp")) ModuleManager.setEnabled(ModuleManager[id]!!, true)
+                for (id in listOf("base_esp", "chunk_esp", "block_esp", "notifier")) ModuleManager.setEnabled(ModuleManager[id]!!, true)
             }
+            // Chromium starts the first time something needs it; give the HUD page time to come up.
+            repeat(80) { if (!WebHud.pageReady) context.waitTicks(10) }
+            context.runOnClient<RuntimeException> { (ModuleManager["donut_regions"] as relict.modules.DonutRegionsModule).fakePingsForTest(48) }
             context.waitTicks(60)
             println("[gametest] base esp clusters: ${rpc(context, "base_esp.list")}")
             context.takeScreenshot(TestScreenshotOptions.of("donut-2-esp").withSize(1280, 720))
+
+            // The map and finder HUDs and pop-ups are drawn by a web page; check it came up and shows a pop-up.
+            context.runOnClient<RuntimeException> {
+                println("[gametest] web hud: supported=${WebHud.supported} failed=${WebHud.failed} pageReady=${WebHud.pageReady}")
+                GameHolder.game.showNotification("Possible player", "1000 1000 · S 15m · blocks changed here", "player")
+                GameHolder.game.showNotification("Stash found", "91% · NW 15m · 1000 1000", "base")
+            }
+            // How often does the page get to animate? Count animation frames over one second and log them.
+            context.runOnClient<RuntimeException> {
+                WebHud.panels.runScript?.invoke("(function(){var n=0,t0=performance.now();function f(){n++;if(performance.now()-t0<1000)requestAnimationFrame(f);else console.log('HUD_FPS '+n)}requestAnimationFrame(f)})()")
+            }
+            context.waitTicks(14)
+            context.takeScreenshot(TestScreenshotOptions.of("hud-3-toast-entering").withSize(1280, 720))
+            context.waitTicks(40)
+            context.takeScreenshot(TestScreenshotOptions.of("hud-4-toast").withSize(1280, 720))
+            context.runOnClient<RuntimeException> { check(WebHud.pageReady) { "the HUD page never loaded" } }
+
+            // From high above, the chunk outline sits on the world's floor and is bright; down at the stash it has faded.
+            world.server.runCommand("tp @p 1008 120 1008 facing 1008 -64 1008")
+            context.waitTicks(100)
+            context.takeScreenshot(TestScreenshotOptions.of("esp-5-from-above").withSize(1280, 720))
+            world.server.runCommand("tp @p 1002.5 -58 985 facing 1002.5 -54.5 1002.5")
+            context.waitTicks(60)
+            context.takeScreenshot(TestScreenshotOptions.of("esp-6-up-close").withSize(1280, 720))
+
+            // Aim at the dot in the middle of the stash chunk: its card shows next to the crosshair.
+            world.server.runCommand("tp @p 1000.5 -58 980 facing 1000.5 -63.8 1000.5")
+            context.waitTicks(60)
+            context.takeScreenshot(TestScreenshotOptions.of("esp-7-aim").withSize(1280, 720))
 
             // Open the GUI with the real key, in the world.
             context.input.pressKey(KeyCodes.RIGHT_SHIFT)
@@ -125,7 +159,7 @@ class RelictClientGameTest : FabricClientGameTest {
 
             context.runOnClient<RuntimeException> {
                 val b = Bridge.active!!.cef
-                b.executeJavaScript("console.log('VIEWPORT ' + innerWidth + 'x' + innerHeight + ' dpr=' + devicePixelRatio + ' win=' + outerWidth + 'x' + outerHeight + ' window=' + JSON.stringify(document.querySelector('.window')?.getBoundingClientRect()) + ' stage=' + JSON.stringify(document.querySelector('.stage')?.getBoundingClientRect()) + ' body=' + document.body.scrollHeight)", b.url, 0)
+                b.executeJavaScript("console.log('VIEWPORT ' + innerWidth + 'x' + innerHeight + ' dpr=' + devicePixelRatio + ' win=' + outerWidth + 'x' + outerHeight + ' pointerEvents=' + getComputedStyle(document.body).pointerEvents + ' clickable=' + (document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest('.window') != null) + ' window=' + JSON.stringify(document.querySelector('.window')?.getBoundingClientRect()) + ' stage=' + JSON.stringify(document.querySelector('.stage')?.getBoundingClientRect()) + ' body=' + document.body.scrollHeight)", b.url, 0)
             }
             context.waitTicks(10)
             for (page in listOf("overview", "map", "waypoints", "modules", "settings", "theme")) {
@@ -137,9 +171,22 @@ class RelictClientGameTest : FabricClientGameTest {
                 context.takeScreenshot(TestScreenshotOptions.of("ui-$page").withSize(1280, 720))
             }
 
-            // Esc closes the GUI and returns to the game.
+            // The open key closes the window again (after its closing animation), and so does Esc.
+            context.runOnClient<RuntimeException> {
+                val b = WebHud.panels.runScript
+                b?.invoke("console.log('HUD_VIEWPORT ' + innerWidth + 'x' + innerHeight)")
+            }
+            context.input.pressKey(KeyCodes.RIGHT_SHIFT)
+            context.waitTicks(14)
+            context.runOnClient<RuntimeException> { check(GameTestCompat.screenName(it) == null) { "Right Shift should close the GUI, screen is ${GameTestCompat.screenName(it)}" } }
+
+            // Reopening is instant: the page was kept loaded in the background.
+            context.input.pressKey(KeyCodes.RIGHT_SHIFT)
+            context.waitForScreen(BrowserScreen::class.java)
+            context.waitTicks(20)
+            context.takeScreenshot(TestScreenshotOptions.of("ui-reopened").withSize(1280, 720))
             context.input.pressKey(KeyCodes.ESCAPE)
-            context.waitTicks(5)
+            context.waitTicks(14)
             context.runOnClient<RuntimeException> { check(GameTestCompat.screenName(it) == null) { "Esc should return to the world, screen is ${GameTestCompat.screenName(it)}" } }
         }
     }

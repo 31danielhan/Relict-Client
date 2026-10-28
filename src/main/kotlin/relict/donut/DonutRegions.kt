@@ -25,12 +25,33 @@ object DonutRegions {
         intArrayOf(90, 107, 108, 109, 110, 111, 112, 113, 99),
     )
 
-    /** Region number -> group name. Only the regions confirmed so far; the rest show as "unknown" until data is loaded. */
-    val groupNames: MutableMap<Int, String> = mutableMapOf(
-        22 to "EU Central",
-        107 to "EU West",
-        5 to "NA East",
+    /**
+     * Which geographic group each cell belongs to, read from the server's own map, in the same layout as [NUMBERS].
+     * EC = EU Central, EW = EU West, NW = NA West, NE = NA East, AS = Asia, OC = Oceania.
+     */
+    private val GROUPS = arrayOf(
+        "OC NW NW NW NE NE NE NE NE",
+        "OC NW NW NW NE NE NE NE NE",
+        "OC NW NW NW NE NE NE NE NE",
+        "OC OC OC NW NE NE NE NE NE",
+        "AS AS AS AS NE NE NE NE NE",
+        "AS EW EW EC EC EC EC EC NE",
+        "AS EW EW EC EC EC EC EC EC",
+        "EC EW EC EC EC EC EC EC EC",
+        "EC EW EW EW EW EW EW EW EC",
     )
+
+    private val GROUP_NAMES = mapOf(
+        "EC" to "EU Central", "EW" to "EU West", "NW" to "NA West", "NE" to "NA East", "AS" to "Asia", "OC" to "Oceania",
+    )
+
+    /** Region number -> group name. Can be changed at run time if the server's map ever changes. */
+    val groupNames: MutableMap<Int, String> = HashMap<Int, String>().also { map ->
+        for (row in 0 until GRID) {
+            val codes = GROUPS[row].split(' ')
+            for (column in 0 until GRID) map[NUMBERS[row][column]] = GROUP_NAMES.getValue(codes[column])
+        }
+    }
 
     data class Cell(val column: Int, val row: Int) {
         val number: Int get() = NUMBERS[row][column]

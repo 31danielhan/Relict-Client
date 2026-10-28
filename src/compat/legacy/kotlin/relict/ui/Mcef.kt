@@ -18,6 +18,12 @@ object Mcef {
 
     val status: String get() = if (ready) "ready" else "Chromium is still downloading or starting"
 
+    /** Nothing to do: this MCEF already paints at its own rate. */
+    fun smooth(@Suppress("UNUSED_PARAMETER") browser: org.cef.browser.CefBrowser) = Unit
+
+    /** The GUI is created when it is opened on this version. */
+    fun preloadGui() = Unit
+
     private var prepared = false
 
     /** The message router must be attached to the shared client before the first browser is created. */

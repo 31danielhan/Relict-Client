@@ -1,5 +1,6 @@
 <script lang="ts">
   import Logo from './Logo.svelte'
+  import { smoothScroll } from '../lib/smoothScroll'
   import { app, nav } from '../lib/store.svelte'
   import { CATEGORY_ORDER, categoryOf } from '../lib/types'
   import type { Page } from '../lib/types'
@@ -47,7 +48,7 @@
     </div>
   </div>
 
-  <div class="scroll">
+  <div class="scroll" use:smoothScroll>
     {#if categories.length}
       <h2>Modules</h2>
       <ul>
@@ -80,19 +81,25 @@
 <style>
   nav {
     display: flex; flex-direction: column; min-height: 0; padding: 20px 14px 16px;
-    border-radius: 18px; border: 1px solid var(--border); border-top-color: rgba(124, 130, 255, 0.22);
+    border-radius: 24px; border: 1px solid var(--border); border-top-color: rgba(124, 130, 255, 0.22);
     background: linear-gradient(180deg, rgba(14, 16, 56, 0.55), rgba(6, 8, 34, 0.55));
   }
   .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 18px; }
   .name { font-family: var(--serif); font-size: 21px; line-height: 1.1; }
   .name em { font-style: italic; color: var(--accent-text); }
-  .release { margin-top: 3px; font-size: 10.5px; letter-spacing: 0.06em; color: var(--faint); }
+  .name { white-space: nowrap; }
+  .release { margin-top: 3px; font-size: 10.5px; letter-spacing: 0.06em; color: var(--faint); white-space: nowrap; }
+  @media (max-width: 960px) {
+    .brand { gap: 9px; padding-bottom: 12px; }
+    .name { font-size: 17px; }
+    .release { font-size: 9px; letter-spacing: 0.03em; }
+  }
   .scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 2px; }
   h2 { margin: 14px 10px 4px; }
   h2:first-child { margin-top: 4px; }
   ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
   li button {
-    display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border-radius: 12px; text-align: left;
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border-radius: 16px; text-align: left;
     color: #aeb1d2; border: 1px solid transparent; transition: background var(--ease), color var(--ease);
   }
   li button svg { flex: none; color: #8a8eb8; }

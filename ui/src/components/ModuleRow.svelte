@@ -1,6 +1,8 @@
 <script lang="ts">
   import SettingControl from './SettingControl.svelte'
   import Toggle from './Toggle.svelte'
+  import { slide } from 'svelte/transition'
+  import { cubicOut } from 'svelte/easing'
   import { setEnabled } from '../lib/store.svelte'
   import type { ModuleDto } from '../lib/types'
 
@@ -21,7 +23,7 @@
   </div>
 
   {#if open}
-    <div class="settings">
+    <div class="settings" transition:slide={{ duration: 260, easing: cubicOut }}>
       {#each module.settings as s (s.id)}
         <SettingControl module={module.id} setting={s} />
       {:else}
@@ -33,12 +35,12 @@
 
 <style>
   .row {
-    position: relative; border-radius: 14px; overflow: hidden;
+    position: relative; border-radius: 20px; overflow: hidden;
     background: linear-gradient(180deg, rgba(15, 18, 62, 0.6), rgba(9, 11, 42, 0.6));
     border: 1px solid var(--border); border-top-color: rgba(124, 130, 255, 0.24);
-    transition: background var(--ease), border-color var(--ease);
+    transition: background var(--ease), border-color var(--ease), transform 180ms ease, box-shadow 220ms ease;
   }
-  .row:hover { border-color: rgba(124, 130, 255, 0.3); }
+  .row:hover { border-color: rgba(124, 130, 255, 0.32); transform: translateY(-1px); box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.7); }
   /* A module that is switched on gets a glowing bar down its left edge and a faint tint. */
   .row.on { background: linear-gradient(180deg, rgba(26, 28, 90, 0.7), rgba(15, 17, 64, 0.7)); }
   .row.on::before {

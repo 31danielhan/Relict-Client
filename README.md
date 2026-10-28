@@ -8,15 +8,47 @@ Fabric client mod for base hunting. See [PLAN.md](PLAN.md).
 
 ## The game GUI
 
-Press Right Shift in game. The window is a Svelte page shown through MCEF (Chromium), floating over the world: modules are
-grouped in the sidebar (Donut, Search), each row expands to its settings and has a switch, and the Theme page picks the accent
-colour. The HUDs (region map, base finder) use the same colours. To work on the look without starting Minecraft, run
+Press Right Shift in game (it closes again on the same key, or Esc). The window is a Svelte page shown through MCEF
+(Chromium), floating over the world. To open instantly, the page is loaded in the background a few seconds after you
+join a world and then waits parked at one frame per second; Chromium itself is not started until then. Modules are grouped
+in the sidebar (Donut, Search), each row expands to its settings and has a switch, and the Theme page picks the accent
+colour. The page is sized by the window, not by Minecraft's GUI scale. To work on the look without starting Minecraft, run
 `npm run dev` in `ui/`: it uses made-up modules, so nothing needs the game.
+
+The region map, the base finder list and the pop-ups are a second page (`#hud`) drawn over the world by a transparent,
+always-on browser that is only as tall as the panels need and closes after 30 seconds of having nothing to show. They
+animate in and out at 60 fps. "HUD size" in Settings scales them. Versions without this layer (1.21.4 and 26.x for now)
+use plain pixel HUDs and the game's own toasts instead.
+
+## Region map and chunk outlines
+
+DonutSMP is a Velocity network of regional servers, so your connection changes from area to area. The region map colours
+every area by its group (EU Central, EU West, NA East, NA West, Asia, Oceania, read from the server's own map), shows
+your ping in each area you have stood in (averaged, and remembered per server), and turns the area you are in white. A
+setting switches the numbers to the server's region numbers instead.
+
+Chunk ESP outlines suspicious chunks flat on the world floor (Y -64) so they can be seen from anywhere, fading as you get close
+to Y -30. The colour is the chance, the same one the Base Finder list uses: orange-red when it is unlikely, yellow kind of
+likely, green likely, blue at 99%. Purple means a player may be in the chunk (blocks changed there lately; it is a hint, not
+proof). A dot in the middle of each chunk shows its details, a card beside the crosshair, when you aim at it. The Stash/Farm
+ESP outlines stashes, machines and farms in plain white, with the same dot and card. Block ESP outlines the blocks you list,
+one colour per kind of block, and every dye colour of a block (shulker boxes, beds, banners...) counts as one.
+
+What the finder scores: containers and hoppers, redstone parts (repeaters and comparators never generate on their own), plain
+stone in the deepslate layer and deepslate above Y 8 (not natural), how many different kinds of player-made blocks a chunk
+holds, and farms (plants growing with the machines that harvest them). It leaves out what a fresh world makes by itself:
+ancient cities, abandoned mineshafts, strongholds, trial chambers and dungeons are recognised and their chests, planks,
+rails and bricks do not count, and kelp, grass, dripstone, amethyst and other plants count for nothing unless machines are built
+around them. Anything that is only a sign that a player may be in a chunk is called "possible player".
+
+The **Notifier** is a module of its own: it shows a notification in the bottom right for a new stash, farm or base (at least the
+chance you set), for a chunk where blocks changed, and for a player the game has loaded near you.
 
 ## Donut modules
 
-Off by default, one toggle each (see the staff note in [PLAN.md](PLAN.md)): **Donut Regions** HUD (the 9x9 region grid), **Base Finder**
-HUD, **Live Players**, **Base ESP**, **Block ESP** and **Chunk ESP**. They only read what the game has already loaded.
+Off by default, one toggle each. DonutSMP staff have said a client like this is allowed as long as it does not harm other players,
+so it only reads what the game has already loaded and never acts for you (see the staff note in [PLAN.md](PLAN.md)): **Donut Regions**
+(the 9x9 region map), **Base Finder** (the list), **Live Players**, **Notifier**, **Stash/Farm ESP**, **Block ESP** and **Chunk ESP**.
 Reach, speed, flight and other combat or movement help are not part of Relict.
 
 | Minecraft | HUDs and the finder | In-world overlays (Base/Block/Chunk ESP) |

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { fly } from 'svelte/transition'
+  import { cubicOut } from 'svelte/easing'
   import ModuleRow from '../components/ModuleRow.svelte'
   import { app, nav } from '../lib/store.svelte'
   import { categoryOf } from '../lib/types'
@@ -63,8 +65,10 @@
   </div>
 
   <div class="list" class:grid>
-    {#each shown as m (m.id)}
-      <ModuleRow module={m} {grid} />
+    {#each shown as m, i (m.id)}
+      <div class="slot" in:fly={{ y: 12, duration: 300, delay: Math.min(i, 8) * 35, easing: cubicOut }}>
+        <ModuleRow module={m} {grid} />
+      </div>
     {:else}
       <div class="empty">No modules match.</div>
     {/each}
@@ -95,6 +99,7 @@
   .views button:hover { color: var(--text); }
   .views button.active { background: #fff; color: #0b0e34; }
 
-  .list { display: flex; flex-direction: column; gap: 10px; }
+  .list { display: flex; flex-direction: column; gap: 12px; }
+  .slot { min-width: 0; }
   .list.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); align-items: start; }
 </style>

@@ -2,6 +2,7 @@ package relict.render
 
 import relict.donut.DonutRegions
 import relict.donut.FinderEntry
+import relict.donut.RegionPings
 import relict.game.PlayerState
 
 /** The screen layouts of the Donut HUDs. They only talk to [HudCanvas], so they look the same on every version. */
@@ -32,8 +33,8 @@ object DonutHuds {
         }
     }
 
-    /** The server's region map, top right, with the region you are in highlighted. */
-    fun regions(c: HudCanvas, player: PlayerState?) {
+    /** The server's region map: your ping in each area you have been in, and the area you are in picked out. */
+    fun regions(c: HudCanvas, player: PlayerState?, pings: RegionPings? = null, livePing: Int? = null) {
         val cellW = 17
         val cellH = 10
         val labelW = 8
@@ -46,8 +47,8 @@ object DonutHuds {
         panel(c, x0, y0, w, h)
 
         c.text("DONUT REGIONS", x0 + PAD, y0 + PAD, Colors.MUTED, 0.8f)
-        val title = cell?.number?.toString() ?: "-"
-        c.text(title, x0 + w - PAD - c.textWidth(title, 1f), y0 + PAD - 1, cell?.let { Colors.group(it.group) } ?: Colors.MUTED, 1f)
+        val title = livePing?.let { "${it}ms" } ?: "-"
+        c.text(title, x0 + w - PAD - c.textWidth(title, 1f), y0 + PAD - 1, livePing?.let { Colors.ping(it) } ?: Colors.MUTED, 1f)
 
         val gx = x0 + PAD + labelW
         val gy = y0 + PAD + 12
@@ -57,13 +58,11 @@ object DonutHuds {
                 val r = DonutRegions.cell(col, row)
                 val cx = gx + col * cellW
                 val cy = gy + row * cellH
-                c.fill(cx + 1, cy + 1, cellW - 2, cellH - 2, Colors.group(r.group))
-                val label = r.number.toString()
-                c.text(label, cx + (cellW - c.textWidth(label, 0.6f)) / 2, cy + 3, Colors.WHITE, 0.6f)
-                if (cell != null && cell.column == col && cell.row == row) {
-                    c.fill(cx, cy, cellW, 1, Colors.WHITE); c.fill(cx, cy + cellH - 1, cellW, 1, Colors.WHITE)
-                    c.fill(cx, cy, 1, cellH, Colors.WHITE); c.fill(cx + cellW - 1, cy, 1, cellH, Colors.WHITE)
-                }
+                val here = cell != null && cell.column == col && cell.row == row
+                val ms = if (here) livePing ?: pings?.get(col, row) else pings?.get(col, row)
+                c.fill(cx + 1, cy + 1, cellW - 2, cellH - 2, if (here) Colors.HERE else Colors.group(r.group))
+                val label = ms?.toString() ?: "-"
+                c.text(label, cx + (cellW - c.textWidth(label, 0.6f)) / 2, cy + 3, if (here) 0xFF0B0E34.toInt() else Colors.WHITE, 0.6f)
             }
         }
         for (col in 0 until DonutRegions.GRID) c.text("${'A' + col}", gx + col * cellW + cellW / 2 - 2, gy + DonutRegions.GRID * cellH + 1, Colors.MUTED, 0.6f)

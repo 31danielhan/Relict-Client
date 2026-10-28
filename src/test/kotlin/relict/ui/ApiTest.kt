@@ -78,7 +78,7 @@ class ApiTest {
         val result = call("settings.set", """{"module":"client","id":"accent","value":"green"}""").asJsonObject
         assertEquals("GREEN", result["value"].asString)
         assertEquals(ClientSettings.Accent.GREEN, ClientSettings.accent.value)
-        assertEquals(2, call("client.settings").asJsonArray.size())
+        assertEquals(3, call("client.settings").asJsonArray.size()) // accent, HUD size, reduced motion
     }
 
     @Test

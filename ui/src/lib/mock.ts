@@ -2,7 +2,7 @@
 import type { CoverageView, Info, ModuleDto, SettingDto, Waypoint } from './types'
 import { CLIENT } from './types'
 
-const info: Info = { version: '0.1.1-dev', minecraft: '1.21.11', mcef: 'mock', dev: true, uiKey: 'Right Shift' }
+const info: Info = { version: '0.1.2-dev', minecraft: '1.21.11', mcef: 'mock', dev: true, uiKey: 'Right Shift' }
 
 const intS = (id: string, name: string, value: number, min: number, max: number, description = ''): SettingDto =>
   ({ id, name, type: 'int', description, value, default: value, min, max })
@@ -16,27 +16,32 @@ const modules: ModuleDto[] = [
     settings: [],
   },
   {
-    id: 'base_finder', name: 'Base Finder', tier: 'yellow', enabled: true,
+    id: 'base_finder', name: 'Base Finder', tier: 'green', enabled: true,
     description: 'Marks loaded chunks with signs of player activity (stashes, machines, dug shafts) and lists the nearest.',
     settings: [intS('radius', 'Scan radius (chunks)', 12, 2, 32, 'How far around you to look.'), intS('minScore', 'Minimum score', 20, 0, 300, 'Chunks scoring less than this are not listed.')],
   },
   {
-    id: 'live_players', name: 'Live Player Search', tier: 'yellow', enabled: false,
-    description: 'Lists nearby players and chunks with fresh building or digging activity, and can alert you to new ones.',
-    settings: [{ id: 'alerts', name: 'Alerts', type: 'enum', description: '', value: 'OFF', default: 'OFF', options: ['OFF', 'TOAST'] }],
+    id: 'live_players', name: 'Live Player Search', tier: 'green', enabled: false,
+    description: 'Lists players the game has loaded near you, and chunks where blocks changed lately (a player may be there).',
+    settings: [intS('radius', 'Scan radius (chunks)', 12, 2, 32)],
   },
   {
-    id: 'base_esp', name: 'Base ESP', tier: 'yellow', enabled: true,
-    description: 'Highlights clusters of storage and redstone below a height limit, through walls.',
+    id: 'notifier', name: 'Notifier', tier: 'green', enabled: true,
+    description: 'Pops up a notification when it finds a stash, farm or base, or when a player may be nearby.',
+    settings: [boolS('bases', 'Stashes and bases', true), boolS('farms', 'Farms', true), boolS('players', 'Players', true), intS('minConfidence', 'Minimum chance (%)', 70, 10, 99)],
+  },
+  {
+    id: 'base_esp', name: 'Stash/Farm ESP', tier: 'green', enabled: true,
+    description: 'Outlines stashes, machines and farms in white, through walls. Aim at the dot in the middle for the details.',
     settings: [intS('radius', 'Radius (chunks)', 8, 1, 16, 'How far around you to highlight.'), intS('maxY', 'Highlight below Y', 0, -64, 320, 'Only blocks below this height are highlighted.')],
   },
   {
-    id: 'block_esp', name: 'Block ESP', tier: 'yellow', enabled: false,
+    id: 'block_esp', name: 'Block ESP', tier: 'green', enabled: false,
     description: 'Highlights the blocks you pick (for example chests or spawners), through walls.',
     settings: [{ id: 'blocks', name: 'Blocks', type: 'string', description: 'Comma-separated block ids.', value: 'minecraft:chest, minecraft:ender_chest, minecraft:spawner', default: 'minecraft:chest, minecraft:ender_chest, minecraft:spawner', maxLength: 400 }],
   },
   {
-    id: 'chunk_esp', name: 'Chunk ESP', tier: 'yellow', enabled: false,
+    id: 'chunk_esp', name: 'Chunk ESP', tier: 'green', enabled: false,
     description: 'Outlines the chunks the Base Finder flags, through walls.',
     settings: [intS('radius', 'Scan radius (chunks)', 12, 2, 32), intS('minScore', 'Minimum score', 20, 0, 300)],
   },

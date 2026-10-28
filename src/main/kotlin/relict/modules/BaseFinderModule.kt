@@ -4,14 +4,15 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import relict.core.Module
-import relict.core.Tier
 import relict.donut.AnalysisSettings
 import relict.donut.BaseFinderEngine
 import relict.donut.DonutScanner
 import relict.donut.FinderEntry
+import relict.game.GameHolder
 import relict.render.DonutHuds
 import relict.render.HudProvider
 import relict.render.Render
+import relict.render.WebHud
 
 /**
  * Flags chunks that show signs of player activity: stashes, machines, dug shafts. It reads the block counts of the
@@ -20,7 +21,6 @@ import relict.render.Render
 class BaseFinderModule : Module(
     "base_finder", "Base Finder",
     "Marks loaded chunks with signs of player activity (stashes, machines, dug shafts) and lists the nearest.",
-    Tier.YELLOW,
 ) {
     val radius = settings.int("radius", "Scan radius (chunks)", 12, 2..32, "How far around you to look. Only chunks your game has loaded can be scanned.")
     val minScore = settings.int("minScore", "Minimum score", 20, 0..300, "Chunks scoring less than this are not listed.")
@@ -46,6 +46,7 @@ class BaseFinderModule : Module(
     override fun onDisable() {
         DonutScanner.release(this)
         Render.huds -= hud
+        WebHud.set("finder", null)
         engine.reset()
         entries = emptyList()
     }
@@ -58,12 +59,33 @@ class BaseFinderModule : Module(
             DonutScanner.snapshots(), DonutScanner::liveSignals,
             DonutScanner.playerX, DonutScanner.playerZ,
             AnalysisSettings(maxY.value, minScore.value),
+            GameHolder.game.player()?.dimension ?: "minecraft:overworld",
         )
+        WebHud.set("finder", if (showHud.value) webState() else null)
         val shown = entries.hashCode()
         if (shown != lastShown) {
             lastShown = shown
             emit("changed", list())
         }
+    }
+
+    /** The list for the HUD page. It works out distance and direction itself from the player position, so they stay current between scans. */
+    private fun webState() = JsonObject().apply {
+        add("entries", JsonArray().also { arr ->
+            entries.forEach { e ->
+                arr.add(JsonObject().apply {
+                    addProperty("id", "${e.result.chunkX},${e.result.chunkZ}")
+                    addProperty("kind", e.result.kind.label)
+                    addProperty("x", e.centerX)
+                    addProperty("z", e.centerZ)
+                    addProperty("minY", e.result.minY)
+                    addProperty("maxY", e.result.maxY)
+                    addProperty("sections", e.result.evidenceSections)
+                    addProperty("totalSections", e.result.totalSections)
+                    addProperty("confidence", e.result.confidence)
+                })
+            }
+        })
     }
 
     private fun list(): JsonArray = JsonArray().also { arr -> entries.forEach { arr.add(it.toJson()) } }

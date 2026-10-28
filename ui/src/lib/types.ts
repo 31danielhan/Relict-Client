@@ -45,6 +45,7 @@ export const CATEGORY_OF: Record<string, string> = {
   base_esp: 'Donut',
   block_esp: 'Donut',
   chunk_esp: 'Donut',
+  notifier: 'Donut',
   coverage: 'Search',
   waypoints: 'Search',
 }

@@ -1,6 +1,7 @@
 package relict.donut
 
 import kotlin.test.Test
+import kotlin.test.assertNotNull
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
@@ -20,7 +21,7 @@ class DonutRegionsTest {
         assertEquals("EU West", DonutRegions.cellAt(-136115.0, 177412.0)!!.group)
         assertEquals("EU Central", DonutRegions.cellAt(114712.0, 91680.0)!!.group)
         assertEquals("NA East", DonutRegions.cellAt(659.0, -973.0)!!.group)
-        assertNull(DonutRegions.cellAt(-200_000.0, -200_000.0)!!.group) // region 82: not confirmed yet
+        assertEquals("Oceania", DonutRegions.cellAt(-200_000.0, -200_000.0)!!.group) // region 82
     }
 
     @Test
@@ -51,5 +52,24 @@ class DonutRegionsTest {
         val numbers = (0 until 9).flatMap { r -> (0 until 9).map { c -> DonutRegions.cell(c, r).number } }
         assertEquals(81, numbers.toSet().size)
         assertEquals(113, numbers.max()) // the server numbers regions up to 113
+    }
+
+    @Test
+    fun everyCellKnowsItsGroup() {
+        for (row in 0 until DonutRegions.GRID) for (column in 0 until DonutRegions.GRID) {
+            assertNotNull(DonutRegions.cell(column, row).group, "cell ${DonutRegions.cell(column, row).label} has no group")
+        }
+    }
+
+    @Test
+    fun groupsMatchTheServersOwnMap() {
+        fun group(number: Int) = DonutRegions.groupNames[number]
+        assertEquals("EU Central", group(22))
+        assertEquals("EU West", group(107))
+        assertEquals("NA East", group(5))
+        assertEquals("Oceania", group(82))
+        assertEquals("NA West", group(100))
+        assertEquals("Asia", group(86))
+        assertEquals(6, DonutRegions.groupNames.values.toSet().size)
     }
 }

@@ -7,6 +7,7 @@ import net.minecraft.registry.Registries
 import net.minecraft.text.Text
 import net.minecraft.util.WorldSavePath
 import net.minecraft.world.chunk.ChunkStatus
+import relict.render.WebHud
 import relict.donut.BlockPos3
 import relict.donut.BlockRef
 import relict.donut.ChunkSnapshot
@@ -24,7 +25,7 @@ object GameImpl : Game {
     override fun player(): PlayerState? {
         val world = client.world ?: return null
         val player = client.player ?: return null
-        return PlayerState(player.x, player.y, player.z, player.yaw, world.registryKey.value.toString())
+        return PlayerState(player.x, player.y, player.z, player.yaw, world.registryKey.value.toString(), player.pitch)
     }
 
     override fun isChunkLoaded(chunkX: Int, chunkZ: Int): Boolean =
@@ -71,6 +72,11 @@ object GameImpl : Game {
         return world.players.filter { it !== client.player }.map { SeenPlayer(it.name.string, it.x, it.y, it.z) }
     }
 
+    override fun pingMs(): Int? {
+        val id = client.player?.uuid ?: return null
+        return client.networkHandler?.getPlayerListEntry(id)?.latency?.takeIf { it > 0 }
+    }
+
     override fun currentProfile(): ProfileSource? {
         client.currentServerEntry?.address?.let { return ProfileSource.Server(it) }
         client.server?.let { return ProfileSource.SingleplayerWorld(it.getSavePath(WorldSavePath.ROOT).normalize().fileName.toString()) }
@@ -81,7 +87,13 @@ object GameImpl : Game {
         client.inGameHud.setOverlayMessage(Text.literal(text), false)
     }
 
+    override fun showNotification(title: String, message: String, tone: String) {
+        if (WebHud.toast(title, message, tone)) return
+        showToast(title, message)
+    }
+
     override fun showToast(title: String, message: String) {
+        if (WebHud.toast(title, message)) return
         SystemToast.add(client.toastManager, SystemToast.Type.PERIODIC_NOTIFICATION, Text.literal(title), Text.literal(message))
     }
 

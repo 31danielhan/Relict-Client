@@ -8,6 +8,7 @@ import org.cef.browser.CefMessageRouter
 import org.cef.handler.CefDisplayHandlerAdapter
 import org.cef.handler.CefLoadHandlerAdapter
 import relict.RelictClient
+import relict.render.WebHud
 
 /** Wires the shared CEF client to the bridge and the log. Identical for every MCEF version. */
 object CefHandlers {
@@ -34,6 +35,8 @@ object CefHandlers {
             override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
                 if (!frame.isMain) return
                 RelictClient.logger.info("[ui] loaded {} (HTTP {})", browser.url, httpStatusCode)
+                Mcef.smooth(browser)
+                WebHud.onLoaded(browser)
             }
         })
     }

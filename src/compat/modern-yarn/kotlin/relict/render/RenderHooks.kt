@@ -11,11 +11,15 @@ object RenderHooks {
     fun install() {
         Render.overlaysSupported = WorldOverlays.install()
         Render.hudSupported = true
+        WebHudRenderer.install()
         HudElementRegistry.addLast(Identifier.of(RelictClient.MOD_ID, "donut")) { context, _ -> drawHud(context) }
     }
 
     private fun drawHud(context: DrawContext) {
-        if (Render.huds.isEmpty() || MinecraftClient.getInstance().options.hudHidden) return
+        if (MinecraftClient.getInstance().options.hudHidden) return
+        // The web layer draws the HUDs when it can; the plain canvas HUDs below are the fallback (browser still starting, or it failed).
+        if (WebHudRenderer.draw(context)) return
+        if (Render.huds.isEmpty()) return
         val canvas = HudDrawer(context)
         for (provider in Render.huds) {
             try {

@@ -58,6 +58,12 @@ fabricApi {
     }
 }
 
+// The game test's network synchroniser sometimes decides, wrongly, that the mod touched packets and stops the run. The test
+// waits with waitTicks anyway, so it runs without it.
+tasks.matching { it.name == "runClientGameTest" }.configureEach {
+    (this as JavaExec).systemProperty("fabric.client.gametest.disableNetworkSynchronizer", "true")
+}
+
 sourceSets.matching { it.name == "gametest" }.configureEach {
     compatDirs.forEach { kotlin.srcDir("src/gametest-compat/$it/kotlin") }
 }
@@ -68,6 +74,11 @@ node {
     version.set("24.22.1")
     nodeProjectDir.set(layout.projectDirectory.dir("ui"))
 }
+
+// Node is downloaded once into .gradle/. Gradle would otherwise read all of its thousands of files on every build to see
+// that nothing changed, which is slow and fails on folders that a cloud drive syncs ("name 2" copies, evicted files).
+tasks.named("nodeSetup") { doNotTrackState("Node is downloaded once into .gradle/nodejs") }
+tasks.named("npmSetup") { doNotTrackState("npm comes with Node") }
 
 tasks.register<NpmTask>("buildUi") {
     dependsOn(tasks.named("npmInstall"))

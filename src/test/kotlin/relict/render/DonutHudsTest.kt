@@ -1,7 +1,7 @@
 package relict.render
 
 import relict.donut.AnalysisSettings
-import relict.donut.DonutRegions
+import relict.donut.RegionPings
 import relict.donut.BaseFinderEngine
 import relict.donut.ChunkSnapshot
 import relict.donut.SectionSnapshot
@@ -28,16 +28,28 @@ class DonutHudsTest {
         ChunkSnapshot(x, z, listOf(SectionSnapshot(-64, mapOf("minecraft:hopper" to 20, "minecraft:chest" to 10))))
 
     @Test
-    fun regionHudShowsTheCurrentRegionAndEveryCell() {
+    fun regionHudShowsYourPingInTheAreaYouAreIn() {
         val c = RecordingCanvas()
-        DonutHuds.regions(c, PlayerState(114712.0, 70.0, 91680.0, 0f, "minecraft:overworld"))
+        val pings = RegionPings().also { it.record(6, 6, 48) }
+        DonutHuds.regions(c, PlayerState(114712.0, 70.0, 91680.0, 0f, "minecraft:overworld"), pings, livePing = 52)
         val labels = c.texts.map { it.text }
-        assertTrue("22" in labels)
-        val numbers = (0 until 9).flatMap { r -> (0 until 9).map { col -> DonutRegions.cell(col, r).number.toString() } }
-        assertTrue(numbers.all { it in labels }, "every region's number is drawn")
+        assertTrue("52ms" in labels, "the big number is your ping right now")
+        assertTrue("52" in labels, "the area you are in shows it too")
+        assertTrue("-" in labels, "areas you have not visited have no number")
         assertTrue("X: 114712  Z: 91680" in labels)
         assertTrue("EU Central" in labels)
+        assertTrue(c.fills.any { it.argb == Colors.HERE }, "the area you are in has its own colour")
         assertTrue(c.fills.all { it.x >= 0 && it.x + it.w <= c.width && it.y >= 0 && it.y + it.h <= c.height }, "everything stays on screen")
+    }
+
+    @Test
+    fun everyRegionIsColouredByItsGroup() {
+        val c = RecordingCanvas()
+        DonutHuds.regions(c, null, RegionPings().also { it.record(0, 0, 30) })
+        for (g in listOf("EU Central", "EU West", "NA East", "NA West", "Asia", "Oceania")) {
+            assertTrue(c.fills.any { it.argb == Colors.group(g) }, "no cell in $g colours")
+        }
+        assertTrue(Colors.ping(30) != Colors.ping(250), "good and bad pings differ in colour")
     }
 
     @Test

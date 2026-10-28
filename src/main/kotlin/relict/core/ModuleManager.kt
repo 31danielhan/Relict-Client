@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import relict.game.GameHolder
 import relict.game.ProfileSource
+import relict.donut.ChunkMemory
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 
@@ -17,6 +18,8 @@ import java.nio.file.Path
 object ModuleManager {
     private val logger = LoggerFactory.getLogger("Relict")
     private const val SAVE_INTERVAL_TICKS = 40
+    private const val SLOW_TICK_NANOS = 8_000_000L
+    private const val MEMORY_SAVE_TICKS = 1200 // a minute
 
     private val modules = LinkedHashMap<String, Module>()
     private val toggleKeys = mutableListOf<Pair<Module, KeyHandle>>()
@@ -108,12 +111,43 @@ object ModuleManager {
         for ((module, bind, key) in actionKeys) {
             while (key.consumePress()) if (module.enabled) guarded(module, "key '${bind.action}'") { bind.onPress() }
         }
-        for (module in modules.values) if (module.enabled) guarded(module, "onTick") { module.onTick() }
+        for (module in modules.values) if (module.enabled) {
+            val start = System.nanoTime()
+            guarded(module, "onTick") { module.onTick() }
+            noteTickTime(module, System.nanoTime() - start)
+        }
 
+        if (ChunkMemory.dirty && ++memoryTicks >= MEMORY_SAVE_TICKS) {
+            memoryTicks = 0
+            storage.current?.let { saveChunkMemory(it) }
+        }
         if (dirty && ++ticksSinceSave >= SAVE_INTERVAL_TICKS) {
             ticksSinceSave = 0
             save()
         }
+    }
+
+    private const val CHUNK_MEMORY_FILE = "chunk-memory.json"
+    private var memoryTicks = 0
+
+    private fun saveChunkMemory(store: ProfileStore) {
+        if (!ChunkMemory.dirty) return
+        try {
+            store.writeBytes(CHUNK_MEMORY_FILE, ChunkMemory.toJson().toString().toByteArray())
+        } catch (e: Exception) {
+            logger.warn("Could not save {}", CHUNK_MEMORY_FILE, e)
+        }
+    }
+
+    private val lastSlowLog = HashMap<String, Long>()
+
+    /** A module that holds up the game thread for long shows as a stutter, so say so (at most every ten seconds per module). */
+    private fun noteTickTime(module: Module, nanos: Long) {
+        if (nanos < SLOW_TICK_NANOS) return
+        val now = System.currentTimeMillis()
+        if (now - (lastSlowLog[module.id] ?: 0L) < 10_000) return
+        lastSlowLog[module.id] = now
+        logger.warn("Module '{}' took {} ms in one tick", module.id, nanos / 1_000_000)
     }
 
     private fun openProfile() {
@@ -124,11 +158,18 @@ object ModuleManager {
         }
         val store = storage.open(key)
         logger.info("Opened profile {}", key)
+        // What the Base Finder last saw underground, kept for when the server stops sending it (you are above Y 0).
+        ChunkMemory.clear()
+        store.readBytes(CHUNK_MEMORY_FILE)?.let { bytes ->
+            runCatching { ChunkMemory.load(com.google.gson.JsonParser.parseString(String(bytes)).asJsonObject) }
+                .onFailure { logger.warn("Could not read {}", CHUNK_MEMORY_FILE, it) }
+        }
         modules.values.filter { it.enabled }.forEach { guarded(it, "onProfileOpen") { it.onProfileOpen(store) } }
     }
 
     private fun closeProfile() {
         val store = storage.current ?: return
+        saveChunkMemory(store)
         modules.values.filter { it.enabled }.forEach { guarded(it, "onProfileClose") { it.onProfileClose(store) } }
         storage.close()
     }

@@ -38,6 +38,12 @@ class Api(private val host: ApiHost) {
             "app.info" -> host.info()
             "modules.list" -> JsonArray().also { arr -> host.modules.forEach { arr.add(it.describe()) } }
             "client.settings" -> describe(ClientSettings.group)
+            // Whether the window is on screen now: a page that loads while it is open (not preloaded) has missed the "gui.show" event.
+            "ui.state" -> JsonObject().apply { addProperty("open", Bridge.active != null) }
+            "ui.editing" -> {
+                UiState.editing = params.get("editing")?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isBoolean }?.asBoolean ?: false
+                JsonObject()
+            }
             "modules.setEnabled" -> {
                 val module = module(params.string("id"))
                 val enabled = params.get("enabled")

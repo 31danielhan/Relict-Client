@@ -1,10 +1,10 @@
 {
-  "relictVersion": "0.1.1",
+  "relictVersion": "0.1.2",
   "versions": [
     {
       "minecraft": "26.3",
       "fabricLoader": "0.20.1",
-      "relictJar": "relict-mc26.3-0.1.1.jar",
+      "relictJar": "relict-mc26.3-0.1.2.jar",
       "mods": [
         {
           "id": "fabric-api",
@@ -32,7 +32,7 @@
     {
       "minecraft": "26.2",
       "fabricLoader": "0.20.1",
-      "relictJar": "relict-mc26.2-0.1.1.jar",
+      "relictJar": "relict-mc26.2-0.1.2.jar",
       "mods": [
         {
           "id": "fabric-api",
@@ -60,7 +60,7 @@
     {
       "minecraft": "26.1.2",
       "fabricLoader": "0.20.1",
-      "relictJar": "relict-mc26.1.2-0.1.1.jar",
+      "relictJar": "relict-mc26.1.2-0.1.2.jar",
       "mods": [
         {
           "id": "fabric-api",
@@ -88,7 +88,7 @@
     {
       "minecraft": "1.21.11",
       "fabricLoader": "0.20.1",
-      "relictJar": "relict-mc1.21.11-0.1.1.jar",
+      "relictJar": "relict-mc1.21.11-0.1.2.jar",
       "mods": [
         {
           "id": "fabric-api",
@@ -116,7 +116,7 @@
     {
       "minecraft": "1.21.10",
       "fabricLoader": "0.20.1",
-      "relictJar": "relict-mc1.21.10-0.1.1.jar",
+      "relictJar": "relict-mc1.21.10-0.1.2.jar",
       "mods": [
         {
           "id": "fabric-api",
@@ -144,7 +144,7 @@
     {
       "minecraft": "1.21.4",
       "fabricLoader": "0.20.1",
-      "relictJar": "relict-mc1.21.4-0.1.1.jar",
+      "relictJar": "relict-mc1.21.4-0.1.2.jar",
       "mods": [
         {
           "id": "fabric-api",

@@ -5,7 +5,7 @@ import relict.donut.ChunkSnapshot
 import kotlin.math.floor
 
 /** Where the local player is. */
-data class PlayerState(val x: Double, val y: Double, val z: Double, val yaw: Float, val dimension: String) {
+data class PlayerState(val x: Double, val y: Double, val z: Double, val yaw: Float, val dimension: String, val pitch: Float = 0f) {
     val blockX: Int get() = floor(x).toInt()
     val blockY: Int get() = floor(y).toInt()
     val blockZ: Int get() = floor(z).toInt()
@@ -41,6 +41,9 @@ interface Game {
     /** Where the blocks with these ids are in a loaded chunk, between two heights. Only looks in sections that contain one. */
     fun findBlocks(chunkX: Int, chunkZ: Int, minY: Int, maxY: Int, ids: Set<String>): List<BlockRef>
 
+    /** Your connection's round-trip time in milliseconds as the server reports it in the player list, or null if unknown (singleplayer, not joined yet). */
+    fun pingMs(): Int?
+
     /** The other players the client currently knows about. */
     fun otherPlayers(): List<SeenPlayer>
 
@@ -49,6 +52,9 @@ interface Game {
     fun showOverlayMessage(text: String)
 
     fun showToast(title: String, message: String)
+
+    /** A notification of a kind (info, alert, base, farm, player): in the bottom right where the HUD layer exists, else a game toast. */
+    fun showNotification(title: String, message: String, tone: String) = showToast(title, message)
 
     /** Runs [task] on the game's main thread (module state is not thread-safe). */
     fun runOnGameThread(task: Runnable)

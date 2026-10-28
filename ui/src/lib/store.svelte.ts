@@ -1,4 +1,4 @@
-import { invoke, on } from './bridge'
+import { inGame, invoke, on } from './bridge'
 import type { DimStats, Info, ModuleDto, Page, PlayerPos, SettingDto, Waypoint } from './types'
 import { CLIENT } from './types'
 
@@ -66,6 +66,16 @@ export async function resetSetting(module: string, id: string) {
     fail(e)
   }
 }
+
+/**
+ * Whether the window is on screen. The game keeps this page loaded in the background while the window is closed, so the
+ * page hides itself (and stops polling) until the game says it is open again.
+ */
+export const ui = $state({ open: !inGame })
+
+if (inGame) invoke<{ open: boolean }>('ui.state').then((s) => { ui.open = s.open }).catch(() => { ui.open = true })
+on('gui.show', () => { ui.open = true; load() })
+on('gui.hide', () => { ui.open = false })
 
 // Changes made in the game (e.g. a keybind toggling a module) arrive as events.
 on<ModuleDto>('module.changed', replaceModule)

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { cubicOut } from 'svelte/easing'
+  import { fade, fly, slide } from 'svelte/transition'
   import Logo from '../components/Logo.svelte'
   import Toggle from '../components/Toggle.svelte'
   import { call, on } from './backend'
@@ -111,7 +113,7 @@
 </script>
 
 <div class="stage">
-  <div class="window">
+  <div class="window" class:ready={snap !== null}>
     <aside>
       <div class="brand">
         <Logo size={38} />
@@ -162,20 +164,8 @@
 
     <main>
       <div class="page">
-        <header class="top">
-          <div>
-            <h1><em>{target ? (target.kind === 'VANILLA' ? target.launcher : target.name) : 'Relict'}</em> Setup</h1>
-            <p>
-              {#if target}
-                {target.kind === 'VANILLA' ? 'Official launcher' : target.launcher}{target.detail ? ` · ${target.detail}` : ''}
-              {:else}Finds your launchers and sets up Fabric and Relict.{/if}
-            </p>
-          </div>
-          {#if pill}<span class="pill {pill.tone}"><i></i>{pill.text}</span>{/if}
-        </header>
-
         {#if banner.visible}
-          <div class="row banner on">
+          <div class="row banner on" transition:slide={{ duration: 260, easing: cubicOut }}>
             <div class="text">
               <div class="name">{banner.title}</div>
               <div class="desc">{banner.detail}</div>
@@ -186,11 +176,25 @@
         {/if}
 
         {#if error}
-          <div class="row error" role="alert">
+          <div class="row error" role="alert" transition:slide={{ duration: 220, easing: cubicOut }}>
             <div class="text"><div class="name">Something went wrong</div><div class="desc">{error}</div></div>
             <button class="btn ghost" onclick={() => (error = '')}>Dismiss</button>
           </div>
         {/if}
+
+        {#key selectedKey}
+          <div class="content" in:fly={{ y: 14, duration: 280, delay: 70, easing: cubicOut }} out:fade={{ duration: 90 }}>
+        <header class="top">
+          <div>
+            <h1><em>{target ? (target.kind === 'VANILLA' ? target.launcher : target.name) : 'Relict'}</em> Setup</h1>
+            <p>
+              {#if target}
+                {target.kind === 'VANILLA' ? 'Official launcher' : target.launcher}{target.detail ? ` · ${target.detail}` : ''}
+              {:else}Finds your launchers and sets up Fabric and Relict.{/if}
+            </p>
+          </div>
+          {#if pill}{#key pill.text}<span class="pill {pill.tone}" in:fade={{ duration: 220 }}><i></i>{pill.text}</span>{/key}{/if}
+        </header>
 
         {#if !target}
           <div class="empty">No launcher was found. Open a Minecraft launcher once, then press Rescan, or use Browse for a folder.</div>
@@ -236,13 +240,15 @@
           {#if confirmingRemove}<p class="muted small">This removes Relict from {target.label}. Your own worlds and mods are not touched.</p>{/if}
 
           {#if hasLog}
-            <section class="activity">
+            <section class="activity" transition:slide={{ duration: 260, easing: cubicOut }}>
               <h2>Activity</h2>
               {#if busy}<div class="bar"><i></i></div>{/if}
-              <div class="log" bind:this={logEl}>{#each lines as l}<div>{l}</div>{/each}</div>
+              <div class="log" bind:this={logEl}>{#each lines as l}<div in:fly={{ x: -8, duration: 180 }}>{l}</div>{/each}</div>
             </section>
           {/if}
         {/if}
+          </div>
+        {/key}
       </div>
     </main>
   </div>
@@ -250,19 +256,22 @@
 
 <style>
   :global(html), :global(body), :global(#app) { background: #04051a; }
-  .stage { height: 100%; padding: 14px; }
+  /* The window itself is the app: the page fills it edge to edge, with no frame of its own. */
+  .stage { height: 100%; }
+  .window { opacity: 0; transform: translateY(8px); transition: opacity 280ms ease, transform 380ms cubic-bezier(0.2, 0.9, 0.25, 1); }
+  .window.ready { opacity: 1; transform: none; }
+  .content { display: flex; flex-direction: column; gap: 18px; }
   .window {
-    display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 14px; height: 100%; padding: 14px;
-    border-radius: 24px; border: 1px solid rgba(124, 130, 255, 0.16);
+    display: grid; grid-template-columns: 300px minmax(0, 1fr); height: 100%;
     background:
-      radial-gradient(900px 500px at 6% 100%, rgba(80, 70, 220, 0.18), transparent 60%),
-      linear-gradient(150deg, #0c0f36 0%, #04051a 60%);
+      radial-gradient(900px 520px at 0% 100%, rgba(80, 70, 220, 0.2), transparent 60%),
+      linear-gradient(150deg, #0c0f36 0%, #04051a 62%);
   }
 
   aside {
-    display: flex; flex-direction: column; min-height: 0; padding: 20px 14px 14px;
-    border-radius: 18px; border: 1px solid var(--border); border-top-color: rgba(124, 130, 255, 0.22);
-    background: linear-gradient(180deg, rgba(14, 16, 56, 0.55), rgba(6, 8, 34, 0.55));
+    display: flex; flex-direction: column; min-height: 0; padding: 22px 16px 16px;
+    border-right: 1px solid rgba(124, 130, 255, 0.14);
+    background: linear-gradient(180deg, rgba(14, 16, 56, 0.5), rgba(6, 8, 34, 0.5));
   }
   .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 16px; }
   .name { font-family: var(--serif); font-size: 22px; line-height: 1.1; }
@@ -302,8 +311,8 @@
   .auto b { font-weight: 600; }
   .auto small { font-size: 11px; color: var(--muted); }
 
-  main { min-width: 0; min-height: 0; overflow-y: auto; border-radius: 18px; }
-  .page { padding: 24px 28px 28px; display: flex; flex-direction: column; gap: 18px; }
+  main { min-width: 0; min-height: 0; overflow-y: auto; }
+  .page { padding: 28px 34px 32px; max-width: 860px; display: flex; flex-direction: column; gap: 18px; }
   header.top { display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 18px; }
   header.top p { margin-top: 6px; color: var(--muted); }
   .pill {

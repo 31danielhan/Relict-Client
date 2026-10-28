@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.chunk.status.ChunkStatus
 import net.minecraft.world.level.storage.LevelResource
+import relict.render.WebHud
 import relict.donut.BlockPos3
 import relict.donut.BlockRef
 import relict.donut.ChunkSnapshot
@@ -25,7 +26,7 @@ object GameImpl : Game {
     override fun player(): PlayerState? {
         val level = client.level ?: return null
         val player = client.player ?: return null
-        return PlayerState(player.x, player.y, player.z, player.yRot, level.dimension().identifier().toString())
+        return PlayerState(player.x, player.y, player.z, player.yRot, level.dimension().identifier().toString(), player.xRot)
     }
 
     override fun isChunkLoaded(chunkX: Int, chunkZ: Int): Boolean =
@@ -72,6 +73,11 @@ object GameImpl : Game {
         return level.players().filter { it !== client.player }.map { SeenPlayer(it.name.string, it.x, it.y, it.z) }
     }
 
+    override fun pingMs(): Int? {
+        val id = client.player?.uuid ?: return null
+        return client.connection?.getPlayerInfo(id)?.latency?.takeIf { it > 0 }
+    }
+
     override fun currentProfile(): ProfileSource? {
         client.currentServer?.ip?.let { return ProfileSource.Server(it) }
         client.singleplayerServer?.let { return ProfileSource.SingleplayerWorld(it.getWorldPath(LevelResource.ROOT).normalize().fileName.toString()) }
@@ -82,7 +88,13 @@ object GameImpl : Game {
         ScreenCompat.showOverlayMessage(Component.literal(text))
     }
 
+    override fun showNotification(title: String, message: String, tone: String) {
+        if (WebHud.toast(title, message, tone)) return
+        showToast(title, message)
+    }
+
     override fun showToast(title: String, message: String) {
+        if (WebHud.toast(title, message)) return
         SystemToast.add(ScreenCompat.toastManager(), SystemToast.SystemToastId.PERIODIC_NOTIFICATION, Component.literal(title), Component.literal(message))
     }
 

@@ -15,6 +15,8 @@ import net.minecraft.client.render.VertexFormats
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.util.Identifier
 import relict.RelictClient
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 /** Draws the world overlays on Minecraft 1.21.11. They use their own pipelines with the depth test off, so they show through walls. */
@@ -43,6 +45,24 @@ object WorldOverlays {
         )
     }
 
+    /** Round dots: a textured quad with a smooth anti-aliased circle (assets/relict/textures/misc/dot.png), tinted by the vertex colour. */
+    private val dotPipeline: RenderPipeline by lazy {
+        RenderPipelines.register(
+            RenderPipeline.builder(RenderPipelines.TRANSFORMS_AND_PROJECTION_SNIPPET, RenderPipelines.POSITION_TEX_COLOR_SNIPPET)
+                .withLocation(Identifier.of(RelictClient.MOD_ID, "pipeline/esp_dots"))
+                .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR, VertexFormat.DrawMode.QUADS)
+                .withCull(false)
+                .withBlend(BlendFunction.TRANSLUCENT)
+                .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+                .withDepthWrite(false)
+                .build()
+        )
+    }
+
+    private val dotLayer: RenderLayer by lazy {
+        RenderLayer.of("relict_esp_dots", RenderSetup.builder(dotPipeline).texture("Sampler0", Identifier.of(RelictClient.MOD_ID, "textures/misc/dot.png")).translucent().build())
+    }
+
     private val quadLayer: RenderLayer by lazy { RenderLayer.of("relict_esp_quads", RenderSetup.builder(quadPipeline).build()) }
     private val lineLayer: RenderLayer by lazy { RenderLayer.of("relict_esp_lines", RenderSetup.builder(linePipeline).build()) }
 
@@ -53,10 +73,13 @@ object WorldOverlays {
     }
 
     private fun drawWorld(context: WorldRenderContext) {
+        val cam = MinecraftClient.getInstance().gameRenderer.camera
+        val camera = cam.cameraPos
+        // Where the view really is, so aiming works from a free camera too.
+        Render.camera = CameraPose(camera.x, camera.y, camera.z, cam.yaw, cam.pitch)
         if (Render.overlays.isEmpty()) return
         val consumers = context.consumers() as? VertexConsumerProvider.Immediate ?: return
-        val camera = MinecraftClient.getInstance().gameRenderer.camera.cameraPos
-        val canvas = Canvas(context.matrices(), consumers, camera.x, camera.y, camera.z)
+        val canvas = Canvas(context.matrices(), consumers, camera.x, camera.y, camera.z, cam.yaw, cam.pitch)
         for (provider in Render.overlays) {
             try {
                 provider.draw(canvas)
@@ -75,10 +98,14 @@ object WorldOverlays {
         private val matrices: MatrixStack,
         private val consumers: VertexConsumerProvider.Immediate,
         private val camX: Double, private val camY: Double, private val camZ: Double,
+        private val yaw: Float, private val pitch: Float,
     ) : OverlayCanvas {
         private class Box(val x0: Float, val y0: Float, val z0: Float, val x1: Float, val y1: Float, val z1: Float, val argb: Int)
         private class Edge(val x1: Float, val y1: Float, val z1: Float, val x2: Float, val y2: Float, val z2: Float, val argb: Int)
 
+        private class Dot(val x: Float, val y: Float, val z: Float, val diameter: Float, val argb: Int)
+
+        private val dots = ArrayList<Dot>()
         private val solids = ArrayList<Box>()
         private val edges = ArrayList<Edge>()
 
@@ -94,6 +121,10 @@ object WorldOverlays {
                     Edge(x0, y0, z0, x0, y1, z0, argb), Edge(x1, y0, z0, x1, y1, z0, argb), Edge(x1, y0, z1, x1, y1, z1, argb), Edge(x0, y0, z1, x0, y1, z1, argb),
                 )
             }
+        }
+
+        override fun dot(x: Double, y: Double, z: Double, diameter: Double, argb: Int) {
+            dots += Dot((x - camX).toFloat(), (y - camY).toFloat(), (z - camZ).toFloat(), diameter.toFloat(), argb)
         }
 
         override fun line(x1: Double, y1: Double, z1: Double, x2: Double, y2: Double, z2: Double, argb: Int) {
@@ -126,8 +157,31 @@ object WorldOverlays {
                 }
                 consumers.draw(lineLayer)
             }
+            if (dots.isNotEmpty()) {
+                // The sprite is a flat quad that always faces the camera. Minecraft: yaw 0 looks toward +Z, pitch is positive looking down.
+                val yawRad = Math.toRadians(yaw.toDouble())
+                val pitchRad = Math.toRadians(pitch.toDouble())
+                val fx = -sin(yawRad) * cos(pitchRad); val fy = -sin(pitchRad); val fz = cos(yawRad) * cos(pitchRad)
+                var rx = -fz; var rz = fx // right = forward x world-up, which has no vertical part
+                val rLen = sqrt(rx * rx + rz * rz).takeIf { it > 1e-6 } ?: 1.0
+                rx /= rLen; rz /= rLen
+                val ux = -rz * fy; val uy = rz * fx - rx * fz; val uz = rx * fy // up = right x forward
+                val d = consumers.getBuffer(dotLayer)
+                for (dot in dots) {
+                    // The sprite's circle fills the middle of the quad, so the quad is larger than the dot.
+                    val h = dot.diameter / 2f / SPRITE_CIRCLE
+                    fun v(sx: Float, sy: Float, u: Float, w: Float) {
+                        d.vertex(e, dot.x + (rx * sx + ux * sy).toFloat() * h, dot.y + (uy * sy).toFloat() * h, dot.z + (rz * sx + uz * sy).toFloat() * h).texture(u, w).color(dot.argb)
+                    }
+                    v(-1f, -1f, 0f, 1f); v(1f, -1f, 1f, 1f); v(1f, 1f, 1f, 0f); v(-1f, 1f, 0f, 0f)
+                }
+                consumers.draw(dotLayer)
+            }
         }
     }
 
     private const val LINE_WIDTH = 2.5f
+
+    /** How much of the sprite's width the solid circle takes up (the rest is its soft glow); matches the image. */
+    private const val SPRITE_CIRCLE = 0.36f * 2
 }
