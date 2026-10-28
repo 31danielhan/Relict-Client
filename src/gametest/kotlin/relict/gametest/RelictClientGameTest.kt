@@ -120,6 +120,19 @@ class RelictClientGameTest : FabricClientGameTest {
             repeat(80) { if (!WebHud.pageReady) context.waitTicks(10) }
             context.runOnClient<RuntimeException> { (ModuleManager["donut_regions"] as relict.modules.DonutRegionsModule).fakePingsForTest(48) }
             context.waitTicks(60)
+            // What do the HUD pages cost? Average the game's frame rate over a few seconds with them on screen, then with them gone.
+            fun fps(): Double {
+                var sum = 0.0
+                repeat(20) { context.waitTicks(5); context.runOnClient<RuntimeException> { sum += it.currentFps } }
+                return sum / 20
+            }
+            val withHud = fps()
+            context.runOnClient<RuntimeException> { for (id in listOf("donut_regions", "base_finder")) ModuleManager.setEnabled(ModuleManager[id]!!, false) }
+            context.waitTicks(40)
+            val withoutHud = fps()
+            context.runOnClient<RuntimeException> { for (id in listOf("donut_regions", "base_finder")) ModuleManager.setEnabled(ModuleManager[id]!!, true) }
+            context.waitTicks(40)
+            println("[gametest] frame rate with the HUD pages ${"%.1f".format(withHud)}, without ${"%.1f".format(withoutHud)}")
             println("[gametest] base esp clusters: ${rpc(context, "base_esp.list")}")
             context.takeScreenshot(TestScreenshotOptions.of("donut-2-esp").withSize(1280, 720))
 
@@ -131,7 +144,7 @@ class RelictClientGameTest : FabricClientGameTest {
             }
             // How often does the page get to animate? Count animation frames over one second and log them.
             context.runOnClient<RuntimeException> {
-                WebHud.panels.runScript?.invoke("(function(){var n=0,t0=performance.now();function f(){n++;if(performance.now()-t0<1000)requestAnimationFrame(f);else console.log('HUD_FPS '+n)}requestAnimationFrame(f)})()")
+                WebHud.regions.runScript?.invoke("(function(){var n=0,t0=performance.now();function f(){n++;if(performance.now()-t0<1000)requestAnimationFrame(f);else console.log('HUD_FPS '+n)}requestAnimationFrame(f)})()")
             }
             context.waitTicks(14)
             context.takeScreenshot(TestScreenshotOptions.of("hud-3-toast-entering").withSize(1280, 720))
@@ -173,7 +186,7 @@ class RelictClientGameTest : FabricClientGameTest {
 
             // The open key closes the window again (after its closing animation), and so does Esc.
             context.runOnClient<RuntimeException> {
-                val b = WebHud.panels.runScript
+                val b = WebHud.regions.runScript
                 b?.invoke("console.log('HUD_VIEWPORT ' + innerWidth + 'x' + innerHeight)")
             }
             context.input.pressKey(KeyCodes.RIGHT_SHIFT)

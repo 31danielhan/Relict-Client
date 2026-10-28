@@ -27,12 +27,12 @@ class ChunkEspModule : Module(
 ) {
     val radius = settings.int("radius", "Scan radius (chunks)", 12, 2..32, "How far around you to look.")
     val minScore = settings.int("minScore", "Minimum score", 20, 0..300, "Chunks scoring less than this are not outlined.")
-    val maxY = settings.int("maxY", "Count blocks below Y", 0, -64..320, "Only blocks below this height count.")
+    val maxY = settings.int("topY", "Count blocks below Y", 320, -64..320, "Only blocks below this height count. At 320 everything counts, above Y 0 as well as below it.")
     val style = settings.enum("style", "Style", Style.BOTH)
 
     @Volatile
     private var entries: List<FinderEntry> = emptyList()
-    private val engine = BaseFinderEngine()
+    private val engine = BaseFinderEngine().also { it.maxNewPerUpdate = 4 }
     private var ticks = 0
 
     override val unavailableReason: String? get() = if (Render.overlaysSupported) null else "In-world overlays aren't available on this Minecraft version yet."
@@ -70,6 +70,7 @@ class ChunkEspModule : Module(
             DonutScanner.snapshots(), DonutScanner::liveSignals,
             DonutScanner.playerX, DonutScanner.playerZ, AnalysisSettings(maxY.value, minScore.value),
             GameHolder.game.player()?.dimension ?: "minecraft:overworld",
+            DonutScanner::redstoneSignals, DonutScanner::farmDrops,
         )
         layer.update(targets())
     }
@@ -126,12 +127,12 @@ class ChunkEspModule : Module(
         })
         addProperty("points", r.score)
         addProperty("level", ConfidenceColor.level(r.confidence))
-        addProperty("note", if (r.fromMemory) "remembered from when you were last below Y 0" else "scanned ${r.totalSections} sections below Y ${maxY.value}")
+        addProperty("note", if (r.fromMemory) "remembered from when you were last below Y 0" else "scanned ${r.totalSections} sections")
     }
 
     private companion object {
         /** The dot sits this far above the floor outline, level with it for all purposes. */
         const val DOT_LIFT = 0.2
-        const val REFRESH_TICKS = 20
+        const val REFRESH_TICKS = 5
     }
 }

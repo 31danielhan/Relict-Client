@@ -99,7 +99,7 @@ async function mockCall(method: string, p: Record<string, any>): Promise<unknown
     case 'init':
     case 'rescan':
     case 'browse':
-      return { installerVersion: '1.3.0', relictVersion: '0.1.1', autoUpdate: true, updatesConfigured: true, versions: ['26.3', '26.2', '26.1.2', '1.21.11', '1.21.10', '1.21.4'], targets: mockTargets, selected: p.selected ?? mockTargets[0].key }
+      return { installerVersion: '0.1.3', relictVersion: '0.1.3', autoUpdate: true, updatesConfigured: true, versions: ['26.3', '26.2', '26.1.2', '1.21.11', '1.21.10', '1.21.4'], targets: mockTargets, selected: p.selected ?? mockTargets[0].key }
     case 'status': {
       const t = mockTargets.find((x) => x.key === p.target)!
       const unsupported = t.state === 'unsupported'
@@ -118,7 +118,7 @@ async function mockCall(method: string, p: Record<string, any>): Promise<unknown
     }
     case 'updates.startup':
       await wait(500)
-      fire('banner', { visible: true, title: 'A new Relict 0.2.0 and installer 1.3.0 is available', detail: 'You have Relict 0.1.1. Adds Donut ESP improvements.', updateAction: true, installerAction: true })
+      fire('banner', { visible: true, title: 'A new Relict 0.2.0 and installer 0.2.0 is available', detail: 'You have Relict 0.1.1. Adds Donut ESP improvements.', updateAction: true, installerAction: true })
       return {}
     case 'updates.check':
       fire('banner', { visible: true, title: "You're up to date", detail: 'Relict 0.1.1 is the newest build.' })

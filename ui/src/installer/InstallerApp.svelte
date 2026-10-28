@@ -269,7 +269,7 @@
   }
 
   aside {
-    display: flex; flex-direction: column; min-height: 0; padding: 22px 16px 16px;
+    display: flex; flex-direction: column; min-height: 0; padding: 44px 16px 16px;
     border-right: 1px solid rgba(124, 130, 255, 0.14);
     background: linear-gradient(180deg, rgba(14, 16, 56, 0.5), rgba(6, 8, 34, 0.5));
   }
@@ -312,7 +312,7 @@
   .auto small { font-size: 11px; color: var(--muted); }
 
   main { min-width: 0; min-height: 0; overflow-y: auto; }
-  .page { padding: 28px 34px 32px; max-width: 860px; display: flex; flex-direction: column; gap: 18px; }
+  .page { padding: 44px 34px 32px; max-width: 860px; display: flex; flex-direction: column; gap: 18px; }
   header.top { display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 18px; }
   header.top p { margin-top: 6px; color: var(--muted); }
   .pill {

@@ -30,5 +30,7 @@ fun main(args: Array<String>) {
         FxLaunch.preview = "--update" in args
         FxLaunch.select = args.indexOf("--select").takeIf { it >= 0 }?.let { args[it + 1].toInt() }
     }
+    // The window without a title bar (StageStyle.EXTENDED) is a preview feature in this JavaFX; it has to be switched on before the first window.
+    System.setProperty("javafx.enablePreview", "true")
     Application.launch(FxApp::class.java)
 }

@@ -1,17 +1,25 @@
 package relict
 
 import net.minecraft.block.Block
+import net.minecraft.block.BlockState
+import net.minecraft.entity.ItemEntity
+import net.minecraft.item.Item
+import net.minecraft.state.property.Properties
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.toast.SystemToast
+import net.minecraft.network.packet.c2s.query.QueryPingC2SPacket
+import net.minecraft.util.Util
 import net.minecraft.registry.Registries
 import net.minecraft.text.Text
 import net.minecraft.util.WorldSavePath
 import net.minecraft.world.chunk.ChunkStatus
 import relict.render.WebHud
+import relict.donut.BlockCategories
 import relict.donut.BlockPos3
 import relict.donut.BlockRef
 import relict.donut.ChunkSnapshot
 import relict.donut.SectionSnapshot
+import relict.game.DroppedItem
 import relict.game.Game
 import relict.game.PlayerState
 import relict.game.SeenPlayer
@@ -37,6 +45,32 @@ object GameImpl : Game {
 
     private fun idOf(block: Block): String = blockIds.getOrPut(block) { Registries.BLOCK.getId(block).toString() }
 
+    private val switchedOn = HashMap<BlockState, Boolean>()
+
+    /** A redstone part that is powered, lit, extended or triggered right now. Looked at once per kind of state, not per block. */
+    private fun isSwitchedOn(state: BlockState): Boolean = switchedOn.getOrPut(state) {
+        BlockCategories.isRedstonePart(idOf(state.block)) && (
+            (state.contains(Properties.POWERED) && state.get(Properties.POWERED)) ||
+                (state.contains(Properties.LIT) && state.get(Properties.LIT)) ||
+                (state.contains(Properties.EXTENDED) && state.get(Properties.EXTENDED)) ||
+                (state.contains(Properties.TRIGGERED) && state.get(Properties.TRIGGERED)) ||
+                (state.contains(Properties.POWER) && state.get(Properties.POWER) > 0)
+            )
+    }
+
+    private val itemIds = HashMap<Item, String>()
+
+    override fun droppedItems(): List<DroppedItem> {
+        val world = client.world ?: return emptyList()
+        val found = ArrayList<DroppedItem>()
+        for (entity in world.entities) {
+            if (entity !is ItemEntity) continue
+            val stack = entity.stack
+            found += DroppedItem(itemIds.getOrPut(stack.item) { Registries.ITEM.getId(stack.item).toString() }, stack.count, entity.x, entity.z)
+        }
+        return found
+    }
+
     override fun snapshotChunk(chunkX: Int, chunkZ: Int): ChunkSnapshot? {
         val world = client.world ?: return null
         val chunk = world.chunkManager.getChunk(chunkX, chunkZ, ChunkStatus.FULL, false) ?: return null
@@ -45,8 +79,12 @@ object GameImpl : Game {
         chunk.sectionArray.forEachIndexed { i, section ->
             if (section.isEmpty) return@forEachIndexed
             val counts = HashMap<String, Int>()
-            section.blockStateContainer.count { state, n -> counts.merge(idOf(state.block), n, Int::plus) }
-            sections += SectionSnapshot((bottom + i) * 16, counts)
+            var active = 0
+            section.blockStateContainer.count { state, n ->
+                counts.merge(idOf(state.block), n, Int::plus)
+                if (isSwitchedOn(state)) active += n
+            }
+            sections += SectionSnapshot((bottom + i) * 16, counts, active)
         }
         return ChunkSnapshot(chunkX, chunkZ, sections)
     }
@@ -73,8 +111,14 @@ object GameImpl : Game {
     }
 
     override fun pingMs(): Int? {
+        val handler = client.networkHandler ?: return null
         val id = client.player?.uuid ?: return null
-        return client.networkHandler?.getPlayerListEntry(id)?.latency?.takeIf { it > 0 }
+        handler.getPlayerListEntry(id)?.latency?.takeIf { it > 0 }?.let { return it }
+        // Some servers hide the tab list, and with it the latency. The game's own ping chart asks the server for an echo and times
+        // it; do the same, and read the newest value it recorded (the answer lands a moment after the question).
+        handler.sendPacket(QueryPingC2SPacket(Util.getMeasuringTimeMs()))
+        val log = client.inGameHud.debugHud.pingLog
+        return if (log.length > 0) log.get(log.length - 1).toInt().takeIf { it > 0 } else null
     }
 
     override fun currentProfile(): ProfileSource? {

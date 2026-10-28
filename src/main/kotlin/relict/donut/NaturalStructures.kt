@@ -13,6 +13,7 @@ enum class Natural(val label: String, val explains: Set<Category>) {
     STRONGHOLD("stronghold", setOf(Category.BUILDING, Category.CONTAINER, Category.TRAVEL, Category.COBBLESTONE)),
     TRIAL_CHAMBER("trial chamber", setOf(Category.MACHINE, Category.CONTAINER, Category.BUILDING, Category.TRAVEL)),
     DUNGEON("dungeon", setOf(Category.COBBLESTONE, Category.CONTAINER)),
+    VILLAGE("village", setOf(Category.CONTAINER, Category.BUILDING, Category.TRAVEL, Category.COBBLESTONE)),
 }
 
 object NaturalStructures {
@@ -30,6 +31,9 @@ object NaturalStructures {
         if (has("end_portal_frame") || ((has("mossy_stone_bricks") || has("cracked_stone_bricks")) && has("chiseled_stone_bricks") && has("iron_bars"))) found += Natural.STRONGHOLD
         if (has("trial_spawner") || has("vault") || anyEnding("copper_bulb") || anyEnding("copper_grate")) found += Natural.TRIAL_CHAMBER
         if (has("spawner") && count("mossy_cobblestone") + count("cobblestone") >= 3 && count("chest") <= 3) found += Natural.DUNGEON
+        // A village: a bell, or the workstations its villagers use (two kinds or more), or a lot of dirt path.
+        val workstations = listOf("lectern", "fletching_table", "cartography_table", "smithing_table", "stonecutter", "loom", "grindstone", "blast_furnace", "smoker", "composter").count { has(it) }
+        if (has("bell") || workstations >= 2 || count("dirt_path") >= 8) found += Natural.VILLAGE
         return found
     }
 }

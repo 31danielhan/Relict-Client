@@ -32,6 +32,25 @@ object Growth {
     private val FARM_MACHINES = setOf("hopper", "observer", "piston", "sticky_piston", "dispenser", "dropper", "cauldron", "water_cauldron")
 }
 
+/**
+ * Things that lie on the ground in a farm: what its machines make and let fall. The items mobs drop on their own (bones, rotten
+ * flesh, string, arrows, feathers...) are not here, and neither are plain blocks that happen to be loose, so one zombie's drops
+ * or a dug-up stone do not look like a farm; it takes a pile of these.
+ */
+object FarmDrops {
+    private val ITEMS = setOf(
+        "bone_meal", "cobblestone", "basalt", "furnace", "obsidian", "iron_ingot", "gold_nugget", "gold_ingot", "sugar_cane", "bamboo",
+        "kelp", "dried_kelp", "dried_kelp_block", "cactus", "wheat", "carrot", "potato", "beetroot", "melon_slice", "melon", "pumpkin",
+        "sweet_berries", "glow_berries", "nether_wart", "cobbled_deepslate", "blackstone", "honeycomb", "honey_bottle", "slime_ball",
+        "ender_pearl", "blaze_rod", "glowstone_dust", "netherite_scrap", "nautilus_shell", "prismarine_shard", "prismarine_crystals",
+    )
+
+    fun isFarmDrop(id: String): Boolean = id.removePrefix("minecraft:") in ITEMS
+
+    /** How many farm drops these stacks hold in all. */
+    fun count(items: Collection<relict.game.DroppedItem>): Int = items.sumOf { if (isFarmDrop(it.id)) it.count else 0 }
+}
+
 object BlockCategories {
     private val cache = HashMap<String, Category?>()
 
@@ -60,10 +79,41 @@ object BlockCategories {
 
     private val playerMadeCache = HashMap<String, Boolean>()
 
+    /**
+     * Blocks that only a player can have: the world never generates them anywhere, in any structure, so finding one means someone
+     * crafted it and put it there. Planks, wool, stairs, fences, stone bricks and the like are left out on purpose: mineshafts,
+     * strongholds, ancient cities and villages are built from them.
+     */
+    fun isCraftedOnly(id: String): Boolean = craftedOnlyCache.getOrPut(id) { craftedOnly(id.removePrefix("minecraft:")) }
+
+    private val craftedOnlyCache = HashMap<String, Boolean>()
+
+    private fun craftedOnly(name: String): Boolean =
+        name in CRAFTED_ONLY || CRAFTED_ONLY_SUFFIXES.any { name.endsWith(it) } ||
+            CRAFTED_ONLY_FAMILIES.any { name == it || name == "${it}_stairs" || name == "${it}_slab" || name == "${it}_wall" }
+
+    private val CRAFTED_ONLY = setOf(
+        "glass", "glass_pane", "smooth_stone", "bricks", "quartz_block", "quartz_bricks", "quartz_pillar", "chiseled_quartz_block", "smooth_quartz",
+        "iron_block", "diamond_block", "emerald_block", "netherite_block", "lapis_block", "raw_iron_block", "raw_gold_block", "raw_copper_block",
+        "slime_block", "honey_block", "dried_kelp_block", "beacon", "enchanting_table", "jukebox", "note_block", "lodestone", "respawn_anchor",
+        "anvil", "chipped_anvil", "damaged_anvil", "crafting_table", "smithing_table", "fletching_table", "cartography_table", "loom",
+        "grindstone", "stonecutter", "end_rod", "tinted_glass", "daylight_detector", "sticky_piston", "piston", "observer", "hopper", "dropper",
+        "repeater", "comparator", "redstone_lamp", "redstone_block", "target", "lever", "tripwire_hook",
+    )
+    private val CRAFTED_ONLY_SUFFIXES = listOf("_concrete", "_concrete_powder", "_glazed_terracotta", "_stained_glass", "_stained_glass_pane", "_shulker_box")
+    private val CRAFTED_ONLY_FAMILIES = listOf("polished_andesite", "polished_granite", "polished_diorite", "smooth_quartz", "brick", "smooth_stone")
+
+    /** Redstone parts whose being switched on or off (a piston moving, a lamp lighting) shows that a machine is running. */
+    fun isRedstonePart(id: String): Boolean = id.removePrefix("minecraft:").let { it in MOVING_PARTS || it.endsWith("_button") || it.endsWith("_pressure_plate") }
+
     private fun playerMade(name: String): Boolean =
+        NATURAL_LOOKALIKES.none { it in name } && (
         name in PLAYER_MADE ||
             PLAYER_MADE_SUFFIXES.any { name.endsWith(it) } ||
-            (classify(name) != null && classify(name) != Category.TRAVEL && classify(name) != Category.OBSIDIAN)
+            (classify(name) != null && classify(name) != Category.TRAVEL && classify(name) != Category.OBSIDIAN))
+
+    /** Made-looking blocks that the Nether, the End and the ocean build their own structures from. */
+    private val NATURAL_LOOKALIKES = listOf("nether_brick", "blackstone", "end_stone", "purpur", "prismarine", "sea_lantern")
 
     private val PLAYER_MADE = setOf(
         "crafting_table", "smithing_table", "fletching_table", "cartography_table", "loom", "grindstone", "stonecutter", "anvil",
@@ -81,9 +131,11 @@ object BlockCategories {
     )
 
     private val CONTAINERS = setOf("chest", "trapped_chest", "barrel", "ender_chest", "furnace", "blast_furnace", "smoker", "brewing_stand")
-    private val MACHINES = setOf("dropper", "dispenser", "observer", "piston", "sticky_piston", "comparator", "repeater", "crafter", "daylight_detector")
+    private val MACHINES = setOf("dropper", "dispenser", "observer", "piston", "sticky_piston", "comparator", "repeater", "crafter", "daylight_detector", "piston_head", "moving_piston")
     private val REDSTONE = setOf("redstone_wire", "redstone_torch", "redstone_wall_torch", "redstone_block", "lever", "tripwire_hook", "target", "redstone_lamp")
     private val TRAVEL = setOf("ladder", "rail", "powered_rail", "detector_rail", "activator_rail", "scaffolding", "torch", "wall_torch", "lantern", "soul_torch", "soul_wall_torch")
     private val CRAFTED_DEEPSLATE = listOf("deepslate_bricks", "deepslate_brick_", "deepslate_tiles", "deepslate_tile_", "polished_deepslate", "chiseled_deepslate", "cracked_deepslate")
     private val BUILDING = setOf("stone_bricks", "bricks", "glass", "glass_pane", "smooth_stone", "sea_lantern")
+
+    private val MOVING_PARTS = REDSTONE + MACHINES + setOf("powered_rail", "note_block")
 }

@@ -14,38 +14,46 @@ import relict.ui.UiAssets
 import kotlin.math.ln
 
 /**
- * Draws [WebHud]'s two transparent pages over the game: the panels across the top and the notifications in the bottom
- * right corner. Each browser is created the first time something is wanted on its layer, is only as big as that layer
+ * Draws [WebHud]'s transparent pages over the game. Each is a small browser of its own, sitting where its panel goes (see
+ * [WebHud] for why they are separate). A browser is created the first time its panel is wanted, is only as big as the panel
  * needs, closes after a while with nothing to show, and takes no input.
  */
 object WebHudRenderer {
-    private class Layer(val layer: WebLayer, val hash: String, val corner: Corner, val cssWidth: Double, val cssHeight: Double) {
+    private enum class Anchor { TOP_LEFT, TOP_RIGHT, BESIDE_CROSSHAIR, BOTTOM_RIGHT }
+
+    private class Layer(val layer: WebLayer, val anchor: Anchor, val cssWidth: Double, val cssHeight: Double) {
         var browser: MCEFBrowser? = null
         var lastWanted = 0L
         var zoomLevel = 0.0
         var zoomFrames = 0
         var x = 0; var y = 0; var guiWidth = 0; var guiHeight = 0
-        var sizedFor = ""
+
+        // What the browser was last sized for, compared as numbers so nothing is allocated every frame.
+        var sw = -1; var sh = -1; var sScale = -1.0; var sHud = -1
     }
 
-    private enum class Corner { TOP_FULL, BOTTOM_RIGHT }
-
-    /** The panels need the full width and the top of the screen; the notifications a small square at the bottom right. */
-    private val panels = Layer(WebHud.panels, "hud", Corner.TOP_FULL, 0.0, 560.0)
-    private val toasts = Layer(WebHud.toasts, "toasts", Corner.BOTTOM_RIGHT, 400.0, 340.0)
-    private val all = listOf(panels, toasts)
+    /**
+     * The sizes are in CSS pixels, a little bigger than the panel inside (which has its own margin and shadow). The aim card
+     * sits just right of and above the crosshair, so its page starts at the crosshair.
+     */
+    private val layers = listOf(
+        Layer(WebHud.finder, Anchor.TOP_LEFT, 236.0, 340.0),
+        Layer(WebHud.regions, Anchor.TOP_RIGHT, 290.0, 440.0),
+        Layer(WebHud.inspect, Anchor.BESIDE_CROSSHAIR, 330.0, 340.0),
+        Layer(WebHud.toasts, Anchor.BOTTOM_RIGHT, 400.0, 340.0),
+    )
 
     fun install() {
         WebHud.supported = true
         WebHud.browserAvailable = { Mcef.start(); Mcef.ready }
-        for (l in all) l.layer.runScript = { js -> l.browser?.cefBrowser?.let { it.executeJavaScript(js, it.url, 0) } }
+        for (l in layers) l.layer.runScript = { js -> l.browser?.cefBrowser?.let { it.executeJavaScript(js, it.url, 0) } }
     }
 
     /** Draws what is wanted. Returns true when the web HUD owns the screen's HUD, so the canvas HUDs must not draw too. */
     fun draw(context: DrawContext): Boolean {
         if (!WebHud.supported || WebHud.failed) return false
         var owns = false
-        for (l in all) owns = drawLayer(l, context) || owns
+        for (l in layers) owns = drawLayer(l, context) || owns
         return owns
     }
 
@@ -86,16 +94,16 @@ object WebHudRenderer {
     }
 
     private fun create(l: Layer): MCEFBrowser? = try {
-        val b = Mcef.api().createBrowser(UiAssets.url("index.html") + "#" + l.hash, true)
+        val b = Mcef.api().createBrowser(UiAssets.url("index.html") + "#" + l.layer.name, true)
         Mcef.smooth(b)
         l.browser = b
         l.layer.cef = b.cefBrowser
-        l.sizedFor = ""
+        l.sw = -1
         val client = MinecraftClient.getInstance()
         fit(l, b, client.window.scaledWidth, client.window.scaledHeight, client.window.scaleFactor.toDouble())
         b
     } catch (e: Exception) {
-        RelictClient.logger.error("The HUD layer '{}' could not start; using the plain HUDs", l.hash, e)
+        RelictClient.logger.error("The HUD layer '{}' could not start; using the plain HUDs", l.layer.name, e)
         WebHud.failed = true
         null
     }
@@ -113,16 +121,23 @@ object WebHudRenderer {
      */
     private fun fit(l: Layer, b: MCEFBrowser, screenW: Int, screenH: Int, scale: Double) {
         val hudScale = ClientSettings.hudScale.value
-        val key = "$screenW,$screenH,$scale,$hudScale"
-        if (key == l.sizedFor) return
-        l.sizedFor = key
+        if (l.sw == screenW && l.sh == screenH && l.sScale == scale && l.sHud == hudScale) return
+        l.sw = screenW; l.sh = screenH; l.sScale = scale; l.sHud = hudScale
         val factor = (screenW * scale / TARGET_PAGE_WIDTH * hudScale / 100.0).coerceIn(0.5, MAX_ZOOM)
-        val wantW = if (l.corner == Corner.TOP_FULL) screenW else minOf(screenW, Math.ceil(l.cssWidth * factor / scale).toInt())
+        val wantW = minOf(screenW, Math.ceil(l.cssWidth * factor / scale).toInt())
         val wantH = minOf(screenH, Math.ceil(l.cssHeight * factor / scale).toInt())
         l.guiWidth = wantW
         l.guiHeight = wantH
-        l.x = if (l.corner == Corner.BOTTOM_RIGHT) screenW - wantW else 0
-        l.y = if (l.corner == Corner.BOTTOM_RIGHT) screenH - wantH else 0
+        l.x = when (l.anchor) {
+            Anchor.TOP_LEFT -> 0
+            Anchor.TOP_RIGHT, Anchor.BOTTOM_RIGHT -> screenW - wantW
+            Anchor.BESIDE_CROSSHAIR -> screenW / 2
+        }
+        l.y = when (l.anchor) {
+            Anchor.TOP_LEFT, Anchor.TOP_RIGHT -> 0
+            Anchor.BOTTOM_RIGHT -> screenH - wantH
+            Anchor.BESIDE_CROSSHAIR -> (screenH / 2 - Math.ceil(CARD_ABOVE_CROSSHAIR * factor / scale).toInt()).coerceAtLeast(0)
+        }
         b.resize((wantW * scale).toInt(), (wantH * scale).toInt())
         l.zoomLevel = ln(factor) / ln(ZOOM_STEP)
         l.zoomFrames = 0
@@ -134,6 +149,9 @@ object WebHudRenderer {
 
     /** Chromium zooms up to 500%; stay well inside that. */
     private const val MAX_ZOOM = 4.0
+
+    /** How far above the crosshair the aim card's page starts, in CSS pixels (the card sits a little above the crosshair). */
+    private const val CARD_ABOVE_CROSSHAIR = 90.0
 
     /** How long nothing is shown before a browser is closed to free its memory. */
     private const val IDLE_CLOSE_MS = 30_000L

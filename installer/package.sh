@@ -15,8 +15,11 @@ if [[ -z "${JAVA_HOME:-}" && -x /usr/libexec/java_home ]]; then
   export JAVA_HOME
 fi
 
-# The installer app's own version (macOS rejects a leading 0), kept in installer.properties; unrelated to Relict's version.
-VERSION="$(sed -n 's/^version=//p' installer/src/main/resources/installer.properties)"
+# The installer wears the client's version (mod_version). macOS rejects an app version starting with 0, so the app bundle's own
+# metadata says 1.x.y for 0.x.y; the number shown in the window and in the update feed is the real one.
+VERSION="$(sed -n 's/^mod_version=//p' gradle.properties)"
+BUNDLE_VERSION="$VERSION"
+if [[ "$(uname -s)" == "Darwin" && "$VERSION" == 0.* ]]; then BUNDLE_VERSION="1.${VERSION#0.}"; fi
 NAME="Relict Installer"
 BRANDING="$PWD/branding"
 OUT="installer/build/package"
@@ -29,7 +32,7 @@ mkdir -p "$OUT"
 # such as ~/Desktop pick up. The finished files are copied into $OUT afterwards.
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
-COMMON=(--name "$NAME" --app-version "$VERSION" --input installer/build/fat --main-jar RelictInstaller.jar
+COMMON=(--name "$NAME" --app-version "$BUNDLE_VERSION" --input installer/build/fat --main-jar RelictInstaller.jar
         --main-class relict.installer.MainKt --dest "$STAGE" --vendor Relict
         --description "Installs Relict Client into your Minecraft launchers"
         --java-options --enable-native-access=ALL-UNNAMED

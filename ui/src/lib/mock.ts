@@ -2,7 +2,7 @@
 import type { CoverageView, Info, ModuleDto, SettingDto, Waypoint } from './types'
 import { CLIENT } from './types'
 
-const info: Info = { version: '0.1.2-dev', minecraft: '1.21.11', mcef: 'mock', dev: true, uiKey: 'Right Shift' }
+const info: Info = { version: '0.1.3-dev', minecraft: '1.21.11', mcef: 'mock', dev: true, uiKey: 'Right Shift' }
 
 const intS = (id: string, name: string, value: number, min: number, max: number, description = ''): SettingDto =>
   ({ id, name, type: 'int', description, value, default: value, min, max })

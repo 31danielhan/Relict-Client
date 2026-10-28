@@ -18,16 +18,32 @@ class BaseFinderEngine {
     private val peaks = HashMap<Pair<Int, Int>, Int>()
 
     /** The last verdict for each chunk and what it was based on, so a chunk that has not changed is not analysed again. */
-    private class Cached(val snapshot: ChunkSnapshot, val live: Int, val maxY: Int, val minScore: Int, val result: ChunkResult?)
+    private class Cached(val snapshot: ChunkSnapshot, val signals: Signals, val maxY: Int, val minScore: Int, val result: ChunkResult?)
+
+    /** What is going on in a chunk right now, besides its blocks. */
+    private data class Signals(val live: Int, val redstone: Int, val drops: Int)
 
     private val cache = HashMap<Pair<Int, Int>, Cached>()
 
-    private fun analyse(snapshot: ChunkSnapshot, settings: AnalysisSettings, live: Int): ChunkResult? {
+    /** Chunks analysed for real in the current [update]; see [maxNewPerUpdate]. */
+    private var analysedNow = 0
+
+    /**
+     * How many chunks one [update] may analyse from scratch. A chunk that has not changed is not analysed again, but the first
+     * time a whole area is seen that is hundreds of chunks, which in one tick is a stutter. So only this many are done per update
+     * and the rest follow on the next ones (callers update a few times a second), and a chunk waiting its turn is simply not listed yet.
+     */
+    var maxNewPerUpdate = Int.MAX_VALUE
+
+    /** Null with [pending] set when the chunk has to wait. */
+    private fun analyse(snapshot: ChunkSnapshot, settings: AnalysisSettings, signals: Signals, pending: BooleanArray): ChunkResult? {
         val key = snapshot.chunkX to snapshot.chunkZ
         val hit = cache[key]
-        if (hit != null && hit.snapshot === snapshot && hit.live == live && hit.maxY == settings.maxY && hit.minScore == settings.minScore) return hit.result
-        val result = BaseAnalyzer.analyze(snapshot, settings, live)
-        cache[key] = Cached(snapshot, live, settings.maxY, settings.minScore, result)
+        if (hit != null && hit.snapshot === snapshot && hit.signals == signals && hit.maxY == settings.maxY && hit.minScore == settings.minScore) return hit.result
+        if (analysedNow >= maxNewPerUpdate) { pending[0] = true; return hit?.result }
+        analysedNow++
+        val result = BaseAnalyzer.analyze(snapshot, settings, signals.live, signals.redstone, signals.drops)
+        cache[key] = Cached(snapshot, signals, settings.maxY, settings.minScore, result)
         return result
     }
 
@@ -38,18 +54,27 @@ class BaseFinderEngine {
         playerZ: Double,
         settings: AnalysisSettings,
         dimension: String = "minecraft:overworld",
+        redstoneSignals: (chunkX: Int, chunkZ: Int) -> Int = { _, _ -> 0 },
+        farmDrops: (chunkX: Int, chunkZ: Int) -> Int = { _, _ -> 0 },
     ): List<FinderEntry> {
+        analysedNow = 0
+        fun signalsOf(snap: ChunkSnapshot) = Signals(liveSignals(snap.chunkX, snap.chunkZ), redstoneSignals(snap.chunkX, snap.chunkZ), farmDrops(snap.chunkX, snap.chunkZ))
         val flagged = ArrayList<ChunkResult>()
         val noUnderground = HashSet<Pair<Int, Int>>()
         for (snap in snapshots) {
             val key = snap.chunkX to snap.chunkZ
-            if (snap.sections.none { it.minY < settings.maxY }) {
-                // Nothing underground is loaded (you are above Y 0, where the server sends none): show what was worked out when it was.
+            if (snap.sections.none { it.minY < 0 }) {
+                // Nothing under Y 0 is loaded (the server sends none while you are above it): what is in view is judged as it is, and
+                // the answer from when the underground was loaded is shown too, the likelier of the two.
                 noUnderground += key
-                ChunkMemory.get(dimension, snap.chunkX, snap.chunkZ)?.let { flagged += it.copy(fromMemory = true) }
+                val remembered = ChunkMemory.get(dimension, snap.chunkX, snap.chunkZ)?.copy(fromMemory = true)
+                val inView = if (snap.sections.any { it.minY < settings.maxY }) analyse(snap, settings, signalsOf(snap), BooleanArray(1)) else null
+                (if (remembered != null && (inView == null || remembered.score >= inView.score)) remembered else inView)?.let { flagged += it }
                 continue
             }
-            val result = analyse(snap, settings, liveSignals(snap.chunkX, snap.chunkZ))
+            val pending = BooleanArray(1)
+            val result = analyse(snap, settings, signalsOf(snap), pending)
+            if (pending[0]) { if (result != null) flagged += result; continue } // waiting its turn: keep the last answer, change nothing
             if (result != null) { flagged += result; ChunkMemory.put(dimension, result) } else ChunkMemory.remove(dimension, snap.chunkX, snap.chunkZ)
         }
         cache.keys.retainAll(snapshots.map { it.chunkX to it.chunkZ }.toHashSet()) // forget chunks that are no longer loaded

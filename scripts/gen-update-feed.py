@@ -15,7 +15,7 @@ the same folder. The installer then offers them to people running an older insta
     python3 scripts/gen-update-feed.py https://example.com/relict \\
         --mac "installer/build/package/Relict Installer-1.3.0.dmg" --windows Relict-Installer-windows.zip
 
-The installer's version is the one in installer/src/main/resources/installer.properties.
+The installer wears the client's version: mod_version in gradle.properties.
 """
 import argparse
 import hashlib
@@ -26,7 +26,7 @@ import urllib.parse
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "installer" / "src" / "main" / "resources" / "manifest.json"
 DIST = ROOT / "dist"
-INSTALLER_PROPERTIES = ROOT / "installer" / "src" / "main" / "resources" / "installer.properties"
+GRADLE_PROPERTIES = ROOT / "gradle.properties"
 
 
 def main():
@@ -61,7 +61,7 @@ def main():
             "sha512": hashlib.sha512(path.read_bytes()).hexdigest(),
         }
     if files:
-        version = next(line.split("=", 1)[1].strip() for line in INSTALLER_PROPERTIES.read_text().splitlines() if line.startswith("version="))
+        version = next(line.split("=", 1)[1].strip() for line in GRADLE_PROPERTIES.read_text().splitlines() if line.startswith("mod_version="))
         manifest["installer"] = {"version": version, "files": files}
 
     out = DIST / "update.json"

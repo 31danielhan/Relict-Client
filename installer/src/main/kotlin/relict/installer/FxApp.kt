@@ -5,15 +5,21 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import javafx.application.Application
+import javafx.application.ConditionalFeature
 import javafx.application.Platform
 import javafx.concurrent.Worker
+import javafx.geometry.Pos
+import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.image.Image
+import javafx.scene.layout.HeaderBar
+import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.web.WebEngine
 import javafx.scene.web.WebView
 import javafx.stage.DirectoryChooser
 import javafx.stage.Stage
+import javafx.stage.StageStyle
 import netscape.javascript.JSObject
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
@@ -78,7 +84,14 @@ class FxApp : Application() {
 
         stage.title = "Relict Installer"
         runCatching { Resources.stream("relict-256.png")?.use { stage.icons.add(Image(it)) } }
-        stage.scene = Scene(view, 1040.0, 700.0, Color.web("#04051a"))
+        // No title bar of its own: the page reaches the top of the window and the system's window buttons sit on top of it.
+        // The strip along the top stays draggable, so the window can still be moved.
+        val extended = Platform.isSupported(ConditionalFeature.EXTENDED_WINDOW) && runCatching { stage.initStyle(StageStyle.EXTENDED) }.isSuccess
+        val root: Parent = if (extended) {
+            val dragStrip = HeaderBar().apply { maxHeight = DRAG_STRIP_HEIGHT; prefHeight = DRAG_STRIP_HEIGHT; minHeight = DRAG_STRIP_HEIGHT }
+            StackPane(view, dragStrip).also { StackPane.setAlignment(dragStrip, Pos.TOP_CENTER) }
+        } else view
+        stage.scene = Scene(root, 1040.0, 700.0, Color.web("#04051a"))
         stage.minWidth = 900.0
         stage.minHeight = 620.0
         stage.show()
@@ -119,5 +132,9 @@ class FxApp : Application() {
                 }
             }, 2500)
         }
+    }
+
+    private companion object {
+        const val DRAG_STRIP_HEIGHT = 34.0
     }
 }

@@ -4,8 +4,8 @@
   import { fade, fly } from 'svelte/transition'
   import { LEGEND, confidenceColor, direction, distance, groupColor, hud, pingColor, rangeLabel } from './state.svelte'
 
-  /** One page, two jobs: the panels across the top, or the notifications in the bottom right corner. */
-  let { mode }: { mode: 'panels' | 'toasts' } = $props()
+  /** One page per panel: the game shows each in a small browser of its own (see WebHud.kt), so repainting one costs only its size. */
+  let { mode }: { mode: 'finder' | 'regions' | 'inspect' | 'toasts' } = $props()
 
   const COLS = 'ABCDEFGHI'
   const CELL_W = 22
@@ -51,7 +51,7 @@
 </script>
 
 <div class="layer">
-  {#if mode === 'panels' && hud.finder}
+  {#if mode === 'finder' && hud.finder}
     <section class="panel finder" in:fly={{ x: -28, duration: dur(320), easing: cubicOut }} out:fade={{ duration: dur(180) }}>
       <header>
         <h2 class="accent">Base finder</h2>
@@ -74,7 +74,7 @@
     </section>
   {/if}
 
-  {#if mode === 'panels' && hud.regions}
+  {#if mode === 'regions' && hud.regions}
     {@const r = hud.regions}
     <section class="panel regions" in:fly={{ x: 28, duration: dur(320), easing: cubicOut }} out:fade={{ duration: dur(180) }}>
       <header>
@@ -126,7 +126,7 @@
     </section>
   {/if}
 
-  {#if mode === 'panels' && hud.inspect}
+  {#if mode === 'inspect' && hud.inspect}
     {@const i = hud.inspect}
     <aside class="inspect" in:fly={{ x: 10, duration: dur(160), easing: cubicOut }} out:fade={{ duration: dur(110) }}>
       <header>
@@ -173,7 +173,6 @@
     background: linear-gradient(180deg, rgba(16, 19, 66, 0.58), rgba(7, 9, 36, 0.62));
     border: 1px solid rgba(124, 130, 255, 0.2); border-top-color: rgba(150, 156, 255, 0.34);
     box-shadow: 0 14px 34px -12px rgba(0, 0, 0, 0.5);
-    will-change: transform, opacity;
   }
   .panel header { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 8px; }
   .panel h2 { font-size: 9.5px; letter-spacing: 0.14em; }
@@ -198,10 +197,9 @@
     position: absolute; left: 0; top: 0; border-radius: 7px; box-sizing: border-box; pointer-events: none;
     border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 0 12px 2px rgba(255, 255, 255, 0.55);
     transition: transform 280ms cubic-bezier(0.2, 0.9, 0.25, 1), opacity 180ms ease;
-    animation: pulse 2.2s ease-in-out infinite;
+    /* No endless pulse: anything that animates forever makes the page repaint, and the game copy it to the GPU, sixty times a second. */
   }
   .cursor.hidden { opacity: 0; }
-  @keyframes pulse { 50% { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 0 6px 1px rgba(255, 255, 255, 0.3); } }
   .collabels { grid-column: 2; display: grid; font-size: 8.5px; color: var(--muted); text-align: center; }
   .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin: 10px 0 8px; padding-top: 9px; border-top: 1px solid rgba(124, 130, 255, 0.12); font-size: 9.5px; color: var(--muted); }
   .legend span { display: flex; align-items: center; gap: 5px; }
@@ -230,7 +228,7 @@
 
   /* the card for what the crosshair is on */
   .inspect {
-    position: absolute; left: calc(50% + 30px); top: calc(50% - 46px); width: 270px; padding: 12px 14px 10px; border-radius: 18px;
+    position: absolute; left: 30px; top: 44px; width: 270px; padding: 12px 14px 10px; border-radius: 18px;
     background: linear-gradient(180deg, rgba(16, 19, 66, 0.82), rgba(7, 9, 36, 0.86));
     border: 1px solid rgba(124, 130, 255, 0.24); border-top-color: rgba(150, 156, 255, 0.38);
     box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.6);
@@ -263,6 +261,6 @@
   .body { display: flex; flex-direction: column; min-width: 0; }
   .body b { font-size: 12.5px; font-weight: 700; }
   .body span { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .life { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; transform-origin: left; background: var(--tone); opacity: 0.85; animation: life linear forwards; }
+  .life { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; transform-origin: left; background: var(--tone); opacity: 0.85; animation: life steps(18, end) forwards; }
   @keyframes life { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 </style>

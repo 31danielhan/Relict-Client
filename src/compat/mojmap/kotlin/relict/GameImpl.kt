@@ -4,14 +4,22 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.toasts.SystemToast
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.ping.ServerboundPingRequestPacket
+import net.minecraft.util.Util
+import net.minecraft.world.entity.item.ItemEntity
+import net.minecraft.world.item.Item
 import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.chunk.status.ChunkStatus
 import net.minecraft.world.level.storage.LevelResource
 import relict.render.WebHud
+import relict.donut.BlockCategories
 import relict.donut.BlockPos3
 import relict.donut.BlockRef
 import relict.donut.ChunkSnapshot
 import relict.donut.SectionSnapshot
+import relict.game.DroppedItem
 import relict.game.Game
 import relict.game.PlayerState
 import relict.game.SeenPlayer
@@ -38,6 +46,32 @@ object GameImpl : Game {
 
     private fun idOf(block: Block): String = blockIds.getOrPut(block) { BuiltInRegistries.BLOCK.getKey(block).toString() }
 
+    private val switchedOn = HashMap<BlockState, Boolean>()
+
+    /** A redstone part that is powered, lit, extended or triggered right now. Looked at once per kind of state, not per block. */
+    private fun isSwitchedOn(state: BlockState): Boolean = switchedOn.getOrPut(state) {
+        BlockCategories.isRedstonePart(idOf(state.block)) && (
+            (state.hasProperty(BlockStateProperties.POWERED) && state.getValue(BlockStateProperties.POWERED)) ||
+                (state.hasProperty(BlockStateProperties.LIT) && state.getValue(BlockStateProperties.LIT)) ||
+                (state.hasProperty(BlockStateProperties.EXTENDED) && state.getValue(BlockStateProperties.EXTENDED)) ||
+                (state.hasProperty(BlockStateProperties.TRIGGERED) && state.getValue(BlockStateProperties.TRIGGERED)) ||
+                (state.hasProperty(BlockStateProperties.POWER) && state.getValue(BlockStateProperties.POWER) > 0)
+            )
+    }
+
+    private val itemIds = HashMap<Item, String>()
+
+    override fun droppedItems(): List<DroppedItem> {
+        val level = client.level ?: return emptyList()
+        val found = ArrayList<DroppedItem>()
+        for (entity in level.entitiesForRendering()) {
+            if (entity !is ItemEntity) continue
+            val stack = entity.item
+            found += DroppedItem(itemIds.getOrPut(stack.item) { BuiltInRegistries.ITEM.getKey(stack.item).toString() }, stack.count, entity.x, entity.z)
+        }
+        return found
+    }
+
     override fun snapshotChunk(chunkX: Int, chunkZ: Int): ChunkSnapshot? {
         val level = client.level ?: return null
         val chunk = level.chunkSource.getChunk(chunkX, chunkZ, ChunkStatus.FULL, false) ?: return null
@@ -46,8 +80,12 @@ object GameImpl : Game {
         chunk.sections.forEachIndexed { i, section ->
             if (section.hasOnlyAir()) return@forEachIndexed
             val counts = HashMap<String, Int>()
-            section.states.count { state, n -> counts.merge(idOf(state.block), n, Int::plus) }
-            sections += SectionSnapshot((bottom + i) * 16, counts)
+            var active = 0
+            section.states.count { state, n ->
+                counts.merge(idOf(state.block), n, Int::plus)
+                if (isSwitchedOn(state)) active += n
+            }
+            sections += SectionSnapshot((bottom + i) * 16, counts, active)
         }
         return ChunkSnapshot(chunkX, chunkZ, sections)
     }
@@ -74,8 +112,14 @@ object GameImpl : Game {
     }
 
     override fun pingMs(): Int? {
+        val connection = client.connection ?: return null
         val id = client.player?.uuid ?: return null
-        return client.connection?.getPlayerInfo(id)?.latency?.takeIf { it > 0 }
+        connection.getPlayerInfo(id)?.latency?.takeIf { it > 0 }?.let { return it }
+        // Some servers hide the tab list, and with it the latency. The game's own ping chart asks the server for an echo and times
+        // it; do the same, and read the newest value it recorded (the answer lands a moment after the question).
+        connection.send(ServerboundPingRequestPacket(Util.getMillis()))
+        val log = client.debugOverlay.pingLogger
+        return if (log.size() > 0) log.get(log.size() - 1).toInt().takeIf { it > 0 } else null
     }
 
     override fun currentProfile(): ProfileSource? {

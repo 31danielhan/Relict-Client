@@ -131,4 +131,25 @@ class BaseFinderEngineTest {
         assertTrue(back.evidence.isNotEmpty())
         assertEquals(null, ChunkMemory.get("minecraft:the_nether", 5, 6), "per dimension")
     }
+
+    @Test
+    fun aWholeAreaIsAnalysedOverSeveralUpdatesNotAllAtOnce() {
+        ChunkMemory.clear()
+        val engine = BaseFinderEngine().also { it.maxNewPerUpdate = 10 }
+        val area = (0 until 30).map { stash(it, 0) }
+        assertEquals(10, engine.update(area, noLive, 0.0, 0.0, settings).size, "the first update only does its share")
+        assertEquals(20, engine.update(area, noLive, 0.0, 0.0, settings).size)
+        assertEquals(30, engine.update(area, noLive, 0.0, 0.0, settings).size)
+        assertEquals(30, engine.update(area, noLive, 0.0, 0.0, settings).size, "and then it is all cached")
+    }
+
+    @Test
+    fun aChunkAlreadyAnalysedIsNotAnalysedAgainWhileOthersWait() {
+        ChunkMemory.clear()
+        val engine = BaseFinderEngine().also { it.maxNewPerUpdate = 2 }
+        val a = stash(1, 0); val b = stash(2, 0); val c = stash(3, 0)
+        engine.update(listOf(a, b, c), noLive, 0.0, 0.0, settings)
+        // The same snapshots again: the first two are cached and free, so the third gets this update's work.
+        assertEquals(3, engine.update(listOf(a, b, c), noLive, 0.0, 0.0, settings).size)
+    }
 }

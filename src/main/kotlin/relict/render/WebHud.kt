@@ -8,13 +8,16 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * One transparent web page drawn over the world through MCEF. [WebHud] has two: the panels (region map, base finder
- * list, the card for what you are aiming at) across the top of the screen, and the notifications in the bottom right
- * corner. They are separate browsers so each can be only as big as it needs to be.
+ * One transparent web page drawn over the world through MCEF. [WebHud] has four, each its own small browser sitting where
+ * its panel goes: the base finder list (top left), the region map (top right), the card for what you are aiming at (by the
+ * crosshair) and the notifications (bottom right).
+ *
+ * They are separate on purpose. MCEF copies and uploads a browser's whole picture to the GPU every time Chromium paints,
+ * however little changed, so a change in the map's coordinates costs the size of the map and not of the whole screen.
  *
  * State is kept here as JSON per key, so a page can be filled in again whenever it (re)loads.
  */
-class WebLayer(val name: String) {
+class WebLayer(val name: String, /** The panel keys this layer shows; "config" and "player" go to every layer that lists them in [support]. */ val keys: Set<String>, val support: Set<String> = emptySet()) {
     private val gson = Gson()
 
     /** The HUD browser, so the shared load handler can tell when its page is ready. */
@@ -80,20 +83,21 @@ object WebHud {
     /** MCEF has finished starting. Set by the render hook, which knows its version's MCEF. */
     @Volatile var browserAvailable: () -> Boolean = { false }
 
-    val panels = WebLayer("panels")
-    val toasts = WebLayer("toasts")
-    val layers = listOf(panels, toasts)
+    val finder = WebLayer("finder", setOf("finder"), setOf("player", "config"))
+    val regions = WebLayer("regions", setOf("regions"), setOf("player", "config"))
+    val inspect = WebLayer("inspect", setOf("inspect"), setOf("config"))
+    val toasts = WebLayer("toasts", emptySet(), setOf("config"))
+    val layers = listOf(finder, regions, inspect, toasts)
 
     /** Keys that configure the pages rather than show a panel. */
     private val supportKeys = setOf("config", "player")
 
-    /** True once any layer's page has loaded. */
-    val pageReady: Boolean get() = panels.pageReady
+    /** True once the region map's page has loaded (the tests wait for it). */
+    val pageReady: Boolean get() = regions.pageReady
 
     /** Shows a panel with this data, changes it, or (null) removes it. Cheap to call every tick: unchanged data is not resent. */
     fun set(key: String, value: JsonElement?) {
-        panels.set(key, value)
-        if (key == "config") toasts.set(key, value) // the notifications follow the colour and motion settings too
+        for (layer in layers) if (key in layer.keys || key in layer.support) layer.set(key, value)
     }
 
     /** Shows a notification in the bottom right. Returns false if the page can't be used (the caller then shows the game's own toast). */

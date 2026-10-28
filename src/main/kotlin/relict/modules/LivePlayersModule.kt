@@ -49,7 +49,7 @@ class LivePlayersModule : Module(
         for ((cx, cz, signals) in DonutScanner.activeChunks()) {
             val dx = cx * 16 + 8 - me.x
             val dz = cz * 16 + 8 - me.z
-            found += Entry("activity", "Possible player ($cx, $cz)", Compass.direction(dx, dz), Compass.distance(dx, dz), null, "$signals block change(s)")
+            found += Entry("activity", "Possible player ($cx, $cz)", Compass.direction(dx, dz), Compass.distance(dx, dz), null, "$signals sign(s) of building or machines")
         }
         entries = found.sortedBy { it.distance }
     }

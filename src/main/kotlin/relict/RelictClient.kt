@@ -96,19 +96,33 @@ object RelictClient : ClientModInitializer {
         }
     }
 
-    /** Feeds the HUD layer what every panel needs: where the player is, and the look the player picked. Unchanged data is not resent. */
+    private var hudTicks = 0
+    private var lastBlockX = Int.MIN_VALUE
+    private var lastBlockZ = Int.MIN_VALUE
+
+    /**
+     * Feeds the HUD pages what they need: where the player is, and the look the player picked. Every change makes a page repaint
+     * and the game copy that page to the GPU, so this is sent as rarely as is still smooth: the position four times a second and
+     * only when the player has moved to another block (the markers glide between positions by themselves), the settings every second.
+     */
     private fun pushHudState() {
-        val player = GameHolder.game.player()
-        WebHud.set("player", player?.let {
-            JsonObject().apply {
-                addProperty("x", Math.round(it.x * 100) / 100.0)
-                addProperty("z", Math.round(it.z * 100) / 100.0)
+        hudTicks++
+        if (hudTicks % 4 == 0) {
+            val player = GameHolder.game.player()
+            if (player == null) {
+                if (lastBlockX != Int.MIN_VALUE) { WebHud.set("player", null); lastBlockX = Int.MIN_VALUE; lastBlockZ = Int.MIN_VALUE }
+            } else if (player.blockX != lastBlockX || player.blockZ != lastBlockZ) {
+                lastBlockX = player.blockX
+                lastBlockZ = player.blockZ
+                WebHud.set("player", JsonObject().apply { addProperty("x", player.blockX); addProperty("z", player.blockZ) })
             }
-        })
-        WebHud.set("config", JsonObject().apply {
-            addProperty("accent", ClientSettings.accent.value.name)
-            addProperty("reducedMotion", ClientSettings.reducedMotion.value)
-        })
+        }
+        if (hudTicks % 20 == 0) {
+            WebHud.set("config", JsonObject().apply {
+                addProperty("accent", ClientSettings.accent.value.name)
+                addProperty("reducedMotion", ClientSettings.reducedMotion.value)
+            })
+        }
     }
 
     /** Keeps the open UI's player marker current. */

@@ -75,7 +75,7 @@ jobs:
         run: |
           mkdir -p upload
           if [[ "$RUNNER_OS" == "macOS" ]]; then
-            version="$(sed -n 's/^version=//p' installer/src/main/resources/installer.properties)"
+            version="$(sed -n 's/^mod_version=//p' gradle.properties)"
             cp installer/build/package/*.dmg "upload/Relict-Installer-${version}.dmg"
           fi
 

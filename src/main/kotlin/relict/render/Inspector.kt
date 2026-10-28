@@ -24,6 +24,7 @@ object Inspector {
 
     private val sources = LinkedHashMap<Any, List<Item>>()
     private var current: Item? = null
+    private var refresh = 0
 
     /** The key of what the crosshair is on right now, or null. */
     @Volatile var aimedKey: String? = null
@@ -65,7 +66,10 @@ object Inspector {
             val ratio = lateral / allowed
             if (ratio <= 1.0 && ratio < bestRatio) { best = item; bestRatio = ratio }
         }
-        if (best !== current) current = best
+        val changed = best !== current
+        if (changed) current = best
+        // The card only needs its distance refreshed a few times a second; every refresh repaints the page and uploads it.
+        if (!changed && best != null && ++refresh % CARD_REFRESH_TICKS != 0) return
         show(best?.let { item ->
             val dx = item.x - view.x
             val dz = item.z - view.z
@@ -78,6 +82,8 @@ object Inspector {
         if (card == null) current = null
         WebHud.set("inspect", card)
     }
+
+    private const val CARD_REFRESH_TICKS = 5
 
     /** How far off the crosshair may be, in blocks, plus a little more for every block of distance. */
     private const val BASE_RADIUS = 1.1

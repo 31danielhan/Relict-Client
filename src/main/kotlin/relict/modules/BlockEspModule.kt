@@ -4,6 +4,7 @@ import relict.core.Module
 import relict.donut.BlockFinder
 import relict.donut.BlockColors
 import relict.donut.BlockRef
+import relict.donut.ChunkSnapshot
 import relict.donut.DonutScanner
 import relict.game.GameHolder
 import relict.render.EspLayer
@@ -29,8 +30,9 @@ class BlockEspModule : Module(
     private val finder = BlockFinder()
     private var ticks = 0
 
-    /** What was seen in each chunk the last time its underground was loaded (the server sends none while you are above Y 0). */
+    /** What was seen below Y 0 in each chunk the last time its underground was loaded (the server sends none while you are above Y 0). */
     private val remembered = HashMap<Pair<Int, Int>, List<BlockRef>>()
+    private val matchedIds = HashMap<Pair<Int, Int>, Triple<ChunkSnapshot, String, Set<String>>>()
 
     override val unavailableReason: String? get() = if (Render.overlaysSupported) null else "In-world overlays aren't available on this Minecraft version yet."
 
@@ -52,6 +54,7 @@ class BlockEspModule : Module(
         layer.update(emptyList())
         finder.clear()
         remembered.clear()
+        matchedIds.clear()
     }
 
     override fun onTick() {
@@ -65,16 +68,21 @@ class BlockEspModule : Module(
         val pcx = me.blockX shr 4
         val pcz = me.blockZ shr 4
 
+        finder.computeBudget = 3
         val nearby = DonutScanner.snapshots().filter { sq(it.chunkX - pcx) + sq(it.chunkZ - pcz) <= radius.value * radius.value }
         finder.retain(nearby.map { it.chunkX to it.chunkZ }.toSet())
         found = nearby.flatMap { snap ->
             val key = snap.chunkX to snap.chunkZ
-            if (snap.sections.none { it.minY < 0 }) return@flatMap remembered[key].orEmpty().filter { matcher.matches(it.id) } // underground not loaded: use what was seen
             // The blocks this chunk really has that the player asked for (a family expands to its colours).
-            val ids = snap.sections.flatMapTo(HashSet()) { it.counts.keys }.filter(matcher::matches).toSet()
+            val cached = matchedIds[key]
+            val ids = if (cached != null && cached.first === snap && cached.second == blocks.value) cached.third else snap.sections.flatMapTo(HashSet()) { it.counts.keys }.filter(matcher::matches).toSet().also { matchedIds[key] = Triple(snap, blocks.value, it) }
+            // Whatever is loaded is searched, above Y 0 or below. The server sends no underground while you are above Y 0, so what was
+            // seen down there the last time it was loaded is kept and shown in its place.
             val here = if (ids.isEmpty()) emptyList() else finder.find(game, snap, ids, Int.MIN_VALUE / 2, Int.MAX_VALUE / 2)
-            remembered[key] = here
-            here
+            if (snap.sections.any { it.minY < 0 }) {
+                remembered[key] = here.filter { it.pos.y < 0 }
+                here
+            } else here + remembered[key].orEmpty().filter { matcher.matches(it.id) }
         }
             .sortedBy { it.pos.distanceSq(me.x, me.y, me.z) }
             .take(maxCount.value)
@@ -88,6 +96,6 @@ class BlockEspModule : Module(
     private fun sq(v: Int) = v.toLong() * v
 
     companion object {
-        private const val REFRESH_TICKS = 20
+        private const val REFRESH_TICKS = 5
     }
 }

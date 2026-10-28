@@ -42,7 +42,7 @@ class AnalysisSettings(
  * each kind of player-made block adds points in tiers, and the evidence list says which.
  */
 object BaseAnalyzer {
-    fun analyze(chunk: ChunkSnapshot, settings: AnalysisSettings = AnalysisSettings(), liveSignals: Int = 0): ChunkResult? {
+    fun analyze(chunk: ChunkSnapshot, settings: AnalysisSettings = AnalysisSettings(), liveSignals: Int = 0, redstoneSignals: Int = 0, farmDrops: Int = 0): ChunkResult? {
         val window = chunk.sections.filter { it.minY < settings.maxY }
         if (window.isEmpty()) return null
 
@@ -88,23 +88,32 @@ object BaseAnalyzer {
         if (stoneInDeepslate >= WRONG_TERRAIN_MIN) add(min(40, 6 + stoneInDeepslate / 8), "stone in the deepslate layer $stoneInDeepslate")
         if (deepslateHigh >= WRONG_TERRAIN_MIN) add(min(40, 6 + deepslateHigh / 8), "deepslate above Y $DEEPSLATE_ABOVE $deepslateHigh")
 
-        // A base is a mix of many kinds of made block; a cave has none. (A natural structure has plenty, so it does not count there.)
-        val madeKinds = HashSet<String>()
-        if (natural.isEmpty()) for (section in window) for ((id, n) in section.counts) if (n > 0 && BlockCategories.isPlayerMade(id)) madeKinds += id
-        if (madeKinds.size >= MADE_KINDS_MIN) add(min(30, madeKinds.size * 3), "${madeKinds.size} kinds of player-made blocks")
+        // Crafted blocks (glass, concrete, bricks, polished stone, crafting stations, storage blocks...) are ones the world never generates,
+        // so a handful of them is a likely base and a mix of many kinds is a sure one. (A natural structure has plenty of its own, so it does not count there.)
+        var craftedTotal = 0
+        val craftedKinds = HashSet<String>()
+        if (natural.isEmpty()) for (section in window) for ((id, n) in section.counts) if (n > 0 && isCrafted(id)) { craftedKinds += id; craftedTotal += n }
+        if (craftedTotal >= CRAFTED_MIN) add(min(60, 14 + craftedKinds.size * 6 + min(24, craftedTotal / 6)), "$craftedTotal crafted blocks, ${craftedKinds.size} ${if (craftedKinds.size == 1) "kind" else "kinds"}")
 
-        // Tunnels and shafts that were dug out. A natural cave is full of cave air; a hole someone mined is plain air. It says nothing
-        // about whether the digger is still there (they may have left long ago), only that someone was. The game's own structures
-        // and geodes are full of plain air too, so they do not count.
+        val travel = count(Category.TRAVEL)
+        add(if (travel >= 3) min(20, travel) else 0, "$travel shaft gear")
+
+        // Tunnels and shafts that were dug out. It says nothing about whether the digger is still there (they may have left long
+        // ago), only that someone was. But the world is full of caves that are plain air as well, big ones deep down especially, so a
+        // lot of open space is not evidence by itself: it only adds to what another sign already points at. Carved caves are
+        // made of cave air, and the game's own structures and geodes are full of open space too, so none of those count.
         var dugAir = 0
         for (section in chunk.sections) {
             if (section.maxY >= 0) continue
+            if ((section.counts[CAVE_AIR] ?: 0) > 0) continue
             val air = section.counts[AIR] ?: 0
             // A section that is mostly air is open sky or a void (flat and empty worlds), not a tunnel through rock.
             if (air * 2 <= section.counts.values.sum()) dugAir += air
         }
         val geode = (all["minecraft:budding_amethyst"] ?: 0) > 0 || ((all["minecraft:amethyst_block"] ?: 0) >= 20 && (all["minecraft:calcite"] ?: 0) > 0)
-        if (dugAir >= DUG_AIR_MIN && natural.isEmpty() && !geode) add(min(25, 4 + dugAir / 60), "dug-out tunnels: $dugAir open blocks underground")
+        val otherSigns = evidence.sumOf { it.points }
+        val dug = dugAir >= DUG_AIR_MIN && natural.isEmpty() && !geode && otherSigns >= DUG_NEEDS_OTHER_SIGNS
+        if (dug) add(min(15, 3 + dugAir / 120), "dug-out tunnels: $dugAir open blocks underground")
 
         // A farm: plants growing, with the parts that harvest them. Plants alone are scenery.
         var growing = 0
@@ -115,10 +124,12 @@ object BaseAnalyzer {
         }
         val farm = growing >= FARM_GROWTH_MIN && farmParts >= FARM_PARTS_MIN
         if (farm) add(min(50, 8 + farmParts * 2), "farm: $growing growing blocks with $farmParts machine parts")
+        // Machines that are running: redstone switching on and off shows someone built it and it is working right now.
+        val redstoneParts = count(Category.REDSTONE) + count(Category.MACHINE)
+        if (redstoneSignals > 0 && redstoneParts > 0) add(min(40, 25 + redstoneSignals * 5), "redstone is running here ($redstoneSignals switches)")
+        // Things a farm's machines make lying about. A mob's own drops are not counted (see FarmDrops), so it takes a real pile.
+        if (farmDrops >= FARM_DROPS_MIN) add(min(45, 10 + farmDrops / 2), "$farmDrops farm drops lying around")
         for (n in natural) evidence += Evidence(0, "looks like a natural ${n.label}")
-
-        val travel = count(Category.TRAVEL)
-        add(if (travel >= 3) min(20, travel) else 0, "$travel shaft gear")
 
         // Blocks changed here lately, which is what a player standing in this chunk looks like from outside. It is only a hint that someone may be there.
         add(min(30, liveSignals * 10), "possible player here ($liveSignals block ${if (liveSignals == 1) "change" else "changes"})")
@@ -127,12 +138,13 @@ object BaseAnalyzer {
         if (score < settings.minScore) return null
         val evidenceList = evidence.filter { it.points > 0 || it.text.startsWith("looks like") }
 
+        val farmDropsHere = farmDrops >= FARM_DROPS_MIN
         val kind = when {
-            farm && count(Category.CONTAINER) < 4 -> Kind.FARM
+            (farm || farmDropsHere) && count(Category.CONTAINER) < 4 && count(Category.HOPPER) < 6 -> Kind.FARM
             count(Category.CONTAINER) >= 4 || count(Category.HOPPER) >= 6 -> Kind.STASH
             count(Category.MACHINE) + count(Category.REDSTONE) >= 20 -> Kind.MACHINE
             travel >= 3 && count(Category.CONTAINER) == 0 -> Kind.DUG_SHAFT
-            dugAir >= DUG_AIR_MIN && natural.isEmpty() && !geode && count(Category.CONTAINER) == 0 -> Kind.DUG_SHAFT
+            dug && count(Category.CONTAINER) == 0 && craftedTotal < CRAFTED_MIN -> Kind.DUG_SHAFT
             else -> Kind.UNKNOWN
         }
         val spanY = sectionsWithEvidence.ifEmpty { window.toSet() }
@@ -144,6 +156,10 @@ object BaseAnalyzer {
             minY = spanY.minOf { it.minY }, maxY = spanY.maxOf { it.maxY },
         )
     }
+
+    /** Only a player can have it (see [BlockCategories.isCraftedOnly]), and it is not already weighed on its own above (storage, redstone, cobblestone and obsidian are). */
+    private fun isCrafted(id: String): Boolean =
+        BlockCategories.isCraftedOnly(id) && BlockCategories.of(id).let { it == null || it == Category.BUILDING || it == Category.CRAFTED_DEEPSLATE }
 
     /** A chunk next to a flagged chunk is likelier to belong to the same base. */
     fun withNeighbourBonus(results: List<ChunkResult>): List<ChunkResult> {
@@ -159,13 +175,16 @@ object BaseAnalyzer {
     }
 
     private const val AIR = "minecraft:air"
+    private const val CAVE_AIR = "minecraft:cave_air"
+    private const val DUG_NEEDS_OTHER_SIGNS = 15
+    private const val CRAFTED_MIN = 3
+    private const val FARM_DROPS_MIN = 8
     private const val DUG_AIR_MIN = 300
     private const val STONE = "minecraft:stone"
     private const val DEEPSLATE = "minecraft:deepslate"
     private const val DEEPSLATE_BELOW = -8
     private const val DEEPSLATE_ABOVE = 8
     private const val WRONG_TERRAIN_MIN = 16
-    private const val MADE_KINDS_MIN = 4
     private const val FARM_GROWTH_MIN = 12
     private const val FARM_PARTS_MIN = 4
 

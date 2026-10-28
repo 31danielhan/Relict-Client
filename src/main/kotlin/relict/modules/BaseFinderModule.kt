@@ -24,11 +24,11 @@ class BaseFinderModule : Module(
 ) {
     val radius = settings.int("radius", "Scan radius (chunks)", 12, 2..32, "How far around you to look. Only chunks your game has loaded can be scanned.")
     val minScore = settings.int("minScore", "Minimum score", 20, 0..300, "Chunks scoring less than this are not listed.")
-    val maxY = settings.int("maxY", "Count blocks below Y", 0, -64..320, "Only blocks below this height count, so surface builds don't flag a chunk.")
+    val maxY = settings.int("topY", "Count blocks below Y", 320, -64..320, "Only blocks below this height count. At 320 everything counts, above Y 0 as well as below it.")
 
     val showHud = settings.bool("showHud", "Show the HUD list", true, "Draws the nearest flagged chunks in the top left of the screen.")
 
-    private val engine = BaseFinderEngine()
+    private val engine = BaseFinderEngine().also { it.maxNewPerUpdate = 4 }
     private val hud = HudProvider { canvas -> if (showHud.value) DonutHuds.baseFinder(canvas, entries) }
     private var ticks = 0
     private var lastShown = 0
@@ -60,6 +60,7 @@ class BaseFinderModule : Module(
             DonutScanner.playerX, DonutScanner.playerZ,
             AnalysisSettings(maxY.value, minScore.value),
             GameHolder.game.player()?.dimension ?: "minecraft:overworld",
+            DonutScanner::redstoneSignals, DonutScanner::farmDrops,
         )
         WebHud.set("finder", if (showHud.value) webState() else null)
         val shown = entries.hashCode()
@@ -115,6 +116,6 @@ class BaseFinderModule : Module(
     }
 
     private companion object {
-        const val REFRESH_TICKS = 20
+        const val REFRESH_TICKS = 5
     }
 }

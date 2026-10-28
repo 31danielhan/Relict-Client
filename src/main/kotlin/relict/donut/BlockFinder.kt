@@ -11,6 +11,12 @@ class BlockFinder {
 
     private val cache = HashMap<Pair<Int, Int>, Cached>()
 
+    /**
+     * How many chunks may be searched for real in one go (the rest keep their last answer until the next go). Searching a chunk is
+     * the costly part, so spreading first-time searches over several ticks avoids one long tick, which shows as a stutter.
+     */
+    var computeBudget = Int.MAX_VALUE
+
     fun find(game: Game, snapshot: ChunkSnapshot, ids: Set<String>, minY: Int, maxY: Int): List<BlockRef> {
         // Only look if this chunk has at least one of the wanted blocks in a section within range.
         val present = snapshot.sections.any { s -> s.minY <= maxY && s.maxY >= minY && s.counts.keys.any { it in ids } }
@@ -21,6 +27,8 @@ class BlockFinder {
         }
         val query = ids.hashCode() * 31 + minY * 7 + maxY
         cache[key]?.let { if (it.fingerprint == snapshot.fingerprint && it.query == query) return it.blocks }
+        if (computeBudget <= 0) return cache[key]?.blocks ?: emptyList() // out of time this tick: the last answer, or none yet
+        computeBudget--
         val blocks = game.findBlocks(snapshot.chunkX, snapshot.chunkZ, minY, maxY, ids)
         cache[key] = Cached(snapshot.fingerprint, query, blocks)
         return blocks

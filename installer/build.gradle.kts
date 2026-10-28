@@ -76,13 +76,25 @@ val bundleBranding = tasks.register<Copy>("bundleBranding") {
     into(layout.buildDirectory.dir("generated/bundled"))
 }
 
+// The installer wears the same version as the client, so there is one number to bump (mod_version in ../gradle.properties).
+val writeInstallerInfo = tasks.register("writeInstallerInfo") {
+    val modVersion = providers.fileContents(layout.projectDirectory.file("../gradle.properties")).asText.map { text ->
+        Regex("^mod_version=(\\S+)", RegexOption.MULTILINE).find(text)?.groupValues?.get(1) ?: error("mod_version is missing from gradle.properties")
+    }
+    val out = layout.buildDirectory.file("generated/info/installer.properties")
+    inputs.property("version", modVersion)
+    outputs.file(out)
+    doLast { out.get().asFile.apply { parentFile.mkdirs(); writeText("version=${modVersion.get()}\n") } }
+}
+
 sourceSets.main {
+    resources.srcDir(layout.buildDirectory.dir("generated/info"))
     resources.srcDir(layout.buildDirectory.dir("generated/bundled"))
     resources.srcDir(layout.buildDirectory.dir("generated/web")) // the page: web/index.html
 }
 
 tasks.processResources {
-    dependsOn(bundleJars, bundleBranding, buildWeb)
+    dependsOn(bundleJars, bundleBranding, buildWeb, writeInstallerInfo)
 }
 
 // One double-clickable jar with everything inside (also the input for jpackage).

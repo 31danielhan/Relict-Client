@@ -14,6 +14,9 @@ data class PlayerState(val x: Double, val y: Double, val z: Double, val yaw: Flo
 /** Another player the client currently has loaded (so within the server's tracking range). */
 data class SeenPlayer(val name: String, val x: Double, val y: Double, val z: Double)
 
+/** An item lying on the ground that the client has loaded (so near you). */
+data class DroppedItem(val id: String, val count: Int, val x: Double, val z: Double)
+
 /** What the player is in, so per-server data goes in the right folder. */
 sealed interface ProfileSource {
     data class Server(val address: String) : ProfileSource
@@ -40,6 +43,9 @@ interface Game {
 
     /** Where the blocks with these ids are in a loaded chunk, between two heights. Only looks in sections that contain one. */
     fun findBlocks(chunkX: Int, chunkZ: Int, minY: Int, maxY: Int, ids: Set<String>): List<BlockRef>
+
+    /** The items lying on the ground in the loaded area. */
+    fun droppedItems(): List<DroppedItem> = emptyList()
 
     /** Your connection's round-trip time in milliseconds as the server reports it in the player list, or null if unknown (singleplayer, not joined yet). */
     fun pingMs(): Int?

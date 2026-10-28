@@ -7,9 +7,12 @@ import { invoke } from './lib/bridge'
 
 // The game shows this same bundle twice: as the window you open with the key, and (at #hud) as the always-on
 // layer that draws the HUDs and pop-ups over the world.
-const hudMode = location.hash === '#hud' || location.hash === '#toasts'
+// The game shows this same bundle as the window, and as four small always-on pages (one per HUD panel). See WebHud.kt.
+const PANELS = ['finder', 'regions', 'inspect', 'toasts'] as const
+const panel = PANELS.find((p) => location.hash === `#${p}`)
+const hudMode = panel !== undefined
 const target = document.getElementById('app')!
-const app = hudMode ? mount(HudApp, { target, props: { mode: location.hash === '#toasts' ? 'toasts' : 'panels' } }) : mount(App, { target })
+const app = panel ? mount(HudApp, { target, props: { mode: panel } }) : mount(App, { target })
 if (hudMode) startMock()
 
 // Tell the game when a text field has focus, so Right Shift (which closes the window) can still make capital letters there.

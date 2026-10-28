@@ -1,16 +1,19 @@
 package relict.donut
 
-/** How many blocks of each type are in one 16 x 16 x 16 section. Gathered from the section's palette, so it is cheap. */
-class SectionSnapshot(val minY: Int, val counts: Map<String, Int>) {
+/**
+ * How many blocks of each type are in one 16 x 16 x 16 section. Gathered from the section's palette, so it is cheap.
+ * [active] is how many redstone parts in it are switched on right now (powered, lit, extended...): it only matters when it changes.
+ */
+class SectionSnapshot(val minY: Int, val counts: Map<String, Int>, val active: Int = 0) {
     val maxY: Int get() = minY + 15
 }
 
 /** What the analysis needs to know about one loaded chunk. */
 class ChunkSnapshot(val chunkX: Int, val chunkZ: Int, val sections: List<SectionSnapshot>) {
     /**
-     * Changes when player-made blocks change or something big is dug out or filled in: a cheap "did someone build or dig
-     * here" check. Plants, water and everything else that changes by itself (kelp and grass growing, dripstone, leaves)
-     * is left out, and the amount of air underground is rounded off, so a fresh world's own changes do not read as a player.
+     * Changes when player-made blocks change: a cheap "did someone build here" check. Plants, water, air and everything
+     * else that changes by itself (kelp and grass growing, dripstone, leaves, mobs, explosions, flowing water) is left out,
+     * so a fresh world's own changes do not read as a player.
      */
     val activityFingerprint: Int by lazy { activityFingerprintOver(null) }
 
@@ -20,21 +23,15 @@ class ChunkSnapshot(val chunkX: Int, val chunkZ: Int, val sections: List<Section
         for (s in sections) {
             if (minYs != null && s.minY !in minYs) continue
             h = h * 31 + s.minY
-            var air = 0
             for ((id, n) in s.counts.entries.sortedBy { it.key }) {
-                when {
-                    id == "minecraft:air" || id == "minecraft:cave_air" -> air += n
-                    BlockCategories.of(id) != null || BlockCategories.isPlayerMade(id) -> h = (h * 31 + id.hashCode()) * 31 + n
-                }
+                if (BlockCategories.of(id) != null || BlockCategories.isPlayerMade(id)) h = (h * 31 + id.hashCode()) * 31 + n
             }
-            if (s.minY < 0) h = h * 31 + air / AIR_STEP // a few air blocks more or less underground is not digging
         }
         return h
     }
 
-    private companion object {
-        const val AIR_STEP = 48
-    }
+    /** True if the chunk holds any redstone part at all (so a change in what is switched on can mean something). */
+    val hasRedstone: Boolean by lazy { sections.any { s -> s.counts.keys.any { BlockCategories.of(it).let { c -> c == Category.REDSTONE || c == Category.MACHINE } } } }
 
     /** Changes whenever any block count in the chunk changes. */
     val fingerprint: Int by lazy {

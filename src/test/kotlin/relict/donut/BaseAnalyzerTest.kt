@@ -2,6 +2,7 @@ package relict.donut
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -40,12 +41,37 @@ class BaseAnalyzerTest {
     }
 
     @Test
-    fun aMixOfPlayerMadeBlockKindsAddsUp() {
-        val few = chunk(section(-40, "minecraft:deepslate" to 3000, "minecraft:oak_planks" to 20, "minecraft:glass" to 20))
-        val many = chunk(section(-40, "minecraft:deepslate" to 3000, "minecraft:oak_planks" to 20, "minecraft:glass" to 20, "minecraft:white_wool" to 9, "minecraft:spruce_stairs" to 8, "minecraft:iron_bars" to 6, "minecraft:crafting_table" to 1))
-        assertNull(BaseAnalyzer.analyze(few))
-        val r = assertNotNull(BaseAnalyzer.analyze(many, AnalysisSettings(minScore = 10)))
-        assertTrue(r.evidence.any { it.text.contains("kinds of player-made blocks") }, "${r.evidence}")
+    fun craftedBlocksAreALikelyBaseAndAMixOfKindsMoreSo() {
+        val few = chunk(section(-40, "minecraft:deepslate" to 3000, "minecraft:white_concrete" to 20, "minecraft:glass" to 20))
+        val many = chunk(section(-40, "minecraft:deepslate" to 3000, "minecraft:white_concrete" to 20, "minecraft:glass" to 20, "minecraft:smooth_stone" to 9, "minecraft:polished_andesite" to 8, "minecraft:quartz_block" to 6, "minecraft:crafting_table" to 1))
+        val fewResult = assertNotNull(BaseAnalyzer.analyze(few))
+        assertTrue(fewResult.evidence.any { it.text.contains("crafted blocks, 2 kinds") }, "${fewResult.evidence}")
+        assertTrue(fewResult.confidence >= 60, "${fewResult.confidence}")
+        val r = assertNotNull(BaseAnalyzer.analyze(many))
+        assertTrue(r.evidence.any { it.text.contains("crafted blocks, 6 kinds") }, "${r.evidence}")
+        assertTrue(r.confidence > fewResult.confidence)
+        assertNull(BaseAnalyzer.analyze(chunk(section(-40, "minecraft:deepslate" to 3000, "minecraft:glass" to 2))), "two panes are not a base")
+    }
+
+    @Test
+    fun blocksTheWorldGeneratesItselfAreNotCraftedBlocks() {
+        for (id in listOf("oak_planks", "white_wool", "spruce_stairs", "oak_fence", "stone_bricks", "iron_bars", "ladder", "bookshelf", "deepslate_tiles", "nether_bricks", "cobblestone"))
+            assertFalse(BlockCategories.isCraftedOnly("minecraft:$id"), id)
+        for (id in listOf("glass", "red_concrete", "smooth_stone", "polished_diorite", "polished_andesite_stairs", "quartz_pillar", "crafting_table", "brick_slab"))
+            assertTrue(BlockCategories.isCraftedOnly("minecraft:$id"), id)
+        // A mineshaft's planks and fences, with no cobwebs to give it away, are not a base.
+        assertNull(BaseAnalyzer.analyze(chunk(section(-40, "minecraft:deepslate" to 3000, "minecraft:oak_planks" to 120, "minecraft:oak_fence" to 80, "minecraft:white_wool" to 30))))
+    }
+
+    @Test
+    fun aVillageIsNotABaseEvenWhenItIsAboveGround() {
+        val village = chunk(section(64, "minecraft:grass_block" to 200, "minecraft:bell" to 1, "minecraft:glass_pane" to 30, "minecraft:white_concrete" to 12, "minecraft:smoker" to 2, "minecraft:barrel" to 4, "minecraft:blast_furnace" to 1, "minecraft:lectern" to 1))
+        assertNull(BaseAnalyzer.analyze(village, AnalysisSettings(maxY = 320)))
+    }
+
+    @Test
+    fun theNethersOwnBricksAreNotCraftedBlocks() {
+        assertNull(BaseAnalyzer.analyze(chunk(section(-40, "minecraft:netherrack" to 3000, "minecraft:nether_bricks" to 200, "minecraft:polished_blackstone_bricks" to 80, "minecraft:purpur_block" to 30))))
     }
 
     @Test
@@ -197,17 +223,46 @@ class BaseAnalyzerTest {
         val before = fp("minecraft:deepslate" to 3000, "minecraft:kelp" to 100, "minecraft:short_grass" to 50, "minecraft:cave_air" to 400)
         assertEquals(before, fp("minecraft:deepslate" to 3000, "minecraft:kelp" to 130, "minecraft:short_grass" to 90, "minecraft:cave_air" to 410), "plants and a little air changing")
         assertNotEquals(before, fp("minecraft:deepslate" to 3000, "minecraft:kelp" to 100, "minecraft:short_grass" to 50, "minecraft:cave_air" to 400, "minecraft:oak_planks" to 5), "a player placing planks")
-        assertNotEquals(before, fp("minecraft:deepslate" to 3000, "minecraft:kelp" to 100, "minecraft:short_grass" to 50, "minecraft:cave_air" to 700), "a lot more air underground")
+        assertEquals(before, fp("minecraft:deepslate" to 3000, "minecraft:kelp" to 100, "minecraft:short_grass" to 50, "minecraft:cave_air" to 700), "air alone (water, mobs, explosions) is not a player")
     }
 
     @Test
-    fun openPlainAirUndergroundIsADugOutTunnelButCaveAirIsNot() {
-        val dug = chunk(section(-40, "minecraft:deepslate" to 3300, "minecraft:air" to 700))
-        val cave = chunk(section(-40, "minecraft:deepslate" to 3300, "minecraft:cave_air" to 700))
-        val r = assertNotNull(BaseAnalyzer.analyze(dug, AnalysisSettings(minScore = 10)))
+    fun aBigNaturalCaveIsNotABaseButATunnelWithShaftGearIs() {
+        val bigCave = chunk(section(-40, "minecraft:deepslate" to 3300, "minecraft:air" to 700), section(-24, "minecraft:deepslate" to 3000, "minecraft:air" to 1000))
+        assertNull(BaseAnalyzer.analyze(bigCave, AnalysisSettings(minScore = 5)), "plain air underground is what noise caves are made of")
+        val carved = chunk(section(-40, "minecraft:deepslate" to 3300, "minecraft:cave_air" to 700))
+        assertNull(BaseAnalyzer.analyze(carved, AnalysisSettings(minScore = 5)))
+
+        val tunnel = chunk(section(-40, "minecraft:deepslate" to 3300, "minecraft:air" to 700, "minecraft:torch" to 8, "minecraft:ladder" to 12))
+        val r = assertNotNull(BaseAnalyzer.analyze(tunnel))
         assertEquals(Kind.DUG_SHAFT, r.kind)
         assertTrue(r.evidence.any { it.text.startsWith("dug-out tunnels") }, "${r.evidence}")
-        assertNull(BaseAnalyzer.analyze(cave, AnalysisSettings(minScore = 10)))
+    }
+
+    @Test
+    fun redstoneRunningAndFarmDropsMakeALikelyBase() {
+        val machine = chunk(section(-40, "minecraft:deepslate" to 3300, "minecraft:piston" to 2, "minecraft:redstone_wire" to 3))
+        val still = assertNotNull(BaseAnalyzer.analyze(machine, AnalysisSettings(minScore = 5)))
+        val running = assertNotNull(BaseAnalyzer.analyze(machine, AnalysisSettings(minScore = 5), redstoneSignals = 2))
+        assertTrue(running.confidence > still.confidence)
+        assertTrue(running.evidence.any { it.text.startsWith("redstone is running here") }, "${running.evidence}")
+        assertNull(BaseAnalyzer.analyze(chunk(section(-40, "minecraft:deepslate" to 3300, "minecraft:air" to 100)), redstoneSignals = 3), "no redstone, no machine to be running")
+
+        val drops = assertNotNull(BaseAnalyzer.analyze(chunk(section(-40, "minecraft:deepslate" to 3300)), farmDrops = 40))
+        assertEquals(Kind.FARM, drops.kind)
+        assertNull(BaseAnalyzer.analyze(chunk(section(-40, "minecraft:deepslate" to 3300)), farmDrops = 3), "a few loose items are not a farm")
+    }
+
+    @Test
+    fun onlyAFarmsOwnDropsCountAsFarmDrops() {
+        assertTrue(FarmDrops.isFarmDrop("minecraft:bone_meal"))
+        assertTrue(FarmDrops.isFarmDrop("minecraft:basalt"))
+        assertTrue(FarmDrops.isFarmDrop("minecraft:furnace"))
+        assertTrue(FarmDrops.isFarmDrop("minecraft:cobblestone"))
+        assertFalse(FarmDrops.isFarmDrop("minecraft:rotten_flesh"))
+        assertFalse(FarmDrops.isFarmDrop("minecraft:bone"))
+        assertFalse(FarmDrops.isFarmDrop("minecraft:string"))
+        assertFalse(FarmDrops.isFarmDrop("minecraft:dirt"))
     }
 
     @Test

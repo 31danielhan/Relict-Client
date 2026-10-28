@@ -33,7 +33,7 @@ class BaseEspModule : Module(
     "Outlines stashes, machines and farms in white, through walls. Aim at the dot in the middle for the details.",
 ) {
     val radius = settings.int("radius", "Radius (chunks)", 8, 1..16, "How far around you to highlight.")
-    val maxY = settings.int("maxY", "Highlight below Y", 0, -64..320, "Only blocks below this height are highlighted.")
+    val maxY = settings.int("maxY", "Highlight below Y", 320, -64..320, "Only blocks below this height are highlighted. At 320 it works above and below Y 0.")
     val minScore = settings.int("minScore", "Minimum cluster score", 20, 0..500, "Smaller clusters are ignored.")
     val style = settings.enum("style", "Style", Style.OUTLINE)
 
@@ -46,6 +46,7 @@ class BaseEspModule : Module(
 
     /** What was found in each chunk the last time its underground was loaded. */
     private val remembered = HashMap<Pair<Int, Int>, List<BlockRef>>()
+    private val wantedIds = HashMap<Pair<Int, Int>, Pair<ChunkSnapshot, Set<String>>>()
 
     override val unavailableReason: String? get() = if (Render.overlaysSupported) null else "In-world overlays aren't available on this Minecraft version yet."
 
@@ -70,6 +71,7 @@ class BaseEspModule : Module(
         Inspector.publish(this, emptyList())
         finder.clear()
         remembered.clear()
+        wantedIds.clear()
     }
 
     override fun onTick() {
@@ -81,20 +83,22 @@ class BaseEspModule : Module(
         val pcx = me.blockX shr 4
         val pcz = me.blockZ shr 4
 
+        finder.computeBudget = 3
         val nearby = DonutScanner.snapshots().filter { sq(it.chunkX - pcx) + sq(it.chunkZ - pcz) <= radius.value * radius.value }
         finder.retain(nearby.map { it.chunkX to it.chunkZ }.toSet())
         val blocks = nearby.flatMap { snap ->
             val key = snap.chunkX to snap.chunkZ
-            if (snap.sections.none { it.minY < maxY.value }) {
-                // The underground is not loaded (you are above Y 0): use what was found when it was.
-                return@flatMap remembered[key].orEmpty()
-            }
-            val ids = snap.sections.flatMap { it.counts.keys }.filter { BlockCategories.of(it) in WANTED }.toSet()
+            // Which wanted blocks the chunk has only changes when the chunk does, so it is worked out once per snapshot.
+            val cached = wantedIds[key]
+            val ids = if (cached != null && cached.first === snap) cached.second else snap.sections.flatMapTo(HashSet()) { it.counts.keys }.filter { BlockCategories.of(it) in WANTED }.toSet().also { wantedIds[key] = snap to it }
             val found = if (ids.isEmpty()) emptyList() else finder.find(game, snap, ids, Int.MIN_VALUE / 2, maxY.value - 1)
-            remembered[key] = found
-            found
+            // Above Y 0 the server sends no underground: show what was found there when it was loaded, next to what is in view now.
+            if (snap.sections.any { it.minY < 0 }) {
+                remembered[key] = found.filter { it.pos.y < 0 }
+                found
+            } else found + remembered[key].orEmpty().filter { it.pos.y < maxY.value }
         }
-        clusters = BlockClusters.build(blocks).filter { it.score >= minScore.value }
+        clusters = BlockClusters.build(blocks).filter { it.score >= minScore.value && looksMade(it) }
         val targets = ArrayList<EspLayer.Target>()
         val items = ArrayList<Inspector.Item>()
         for (c in clusters) {
@@ -109,6 +113,13 @@ class BaseEspModule : Module(
         }
         layer.update(targets)
         Inspector.publish(this, items)
+    }
+
+    /** Above ground a few chests and furnaces are a village or a house; a cluster needs a hopper, a machine, redstone or a big pile of storage to count there. */
+    private fun looksMade(c: Cluster): Boolean {
+        if (c.minY < 0) return true
+        val parts = (c.counts[Category.HOPPER] ?: 0) + (c.counts[Category.MACHINE] ?: 0) + (c.counts[Category.REDSTONE] ?: 0)
+        return parts >= 3 || (c.counts[Category.CONTAINER] ?: 0) >= SURFACE_STASH_MIN
     }
 
     /** A cluster is a farm when the chunk it is in has plants growing with machines round them (and no real stash in it). */
@@ -163,7 +174,8 @@ class BaseEspModule : Module(
 
     private companion object {
         const val WHITE = 0xFFFFFF
-        const val REFRESH_TICKS = 20
+        const val REFRESH_TICKS = 5
+        const val SURFACE_STASH_MIN = 12
         val WANTED = setOf(Category.CONTAINER, Category.HOPPER, Category.MACHINE, Category.REDSTONE)
     }
 }

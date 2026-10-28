@@ -156,7 +156,7 @@ Windows will show an "unidentified developer" / SmartScreen warning until you si
 
 The logo (a radar with a donut) is `branding/relict-logo.svg`, drawn by `scripts/gen-logo.py`. `scripts/make-icons.sh`
 turns it into the app icons (`.icns`, `.ico`, the mod icon), and `scripts/sync-logo.py` copies it into the in-game GUI.
-The installer's own version is in `installer/src/main/resources/installer.properties`.
+The installer wears the same version as the client (`mod_version` in `gradle.properties`).
 
 A command-line mode exists for scripts and testing:
 

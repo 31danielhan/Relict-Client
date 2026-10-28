@@ -15,7 +15,7 @@ class InspectorTest {
         JsonObject().apply { addProperty("title", title); addProperty("distance", distance); addProperty("direction", direction) }
     }
 
-    private fun shown(): String? = WebHud.panels.state["inspect"]?.let { com.google.gson.JsonParser.parseString(it).asJsonObject["title"].asString }
+    private fun shown(): String? = WebHud.inspect.state["inspect"]?.let { com.google.gson.JsonParser.parseString(it).asJsonObject["title"].asString }
 
     @AfterTest
     fun clear() {
@@ -55,7 +55,7 @@ class InspectorTest {
     fun theCardKnowsHowFarAndWhichWay() {
         Inspector.publish(owner, listOf(item(0.0, 65.62, 25.0, "south")))
         Inspector.tick(player(yaw = 0f))
-        val card = com.google.gson.JsonParser.parseString(assertNotNull(WebHud.panels.state["inspect"])).asJsonObject
+        val card = com.google.gson.JsonParser.parseString(assertNotNull(WebHud.inspect.state["inspect"])).asJsonObject
         assertEquals(25, card["distance"].asInt)
         assertEquals("S", card["direction"].asString)
     }
@@ -85,7 +85,7 @@ class InspectorTest {
         assertNull(shown())
         Inspector.tick(player, CameraPose(130.0, 10.0, 0.0, 90f, 0f))
         assertEquals("far east", shown())
-        val card = com.google.gson.JsonParser.parseString(assertNotNull(WebHud.panels.state["inspect"])).asJsonObject
+        val card = com.google.gson.JsonParser.parseString(assertNotNull(WebHud.inspect.state["inspect"])).asJsonObject
         assertEquals(30, card["distance"].asInt, "measured from the camera")
         assertEquals("W", card["direction"].asString)
     }
